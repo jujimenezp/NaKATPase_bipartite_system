@@ -1,0 +1,6 @@
+*.log
+*.x
+*.dat
+*.pdf
+.ccls-cache/
+*.png
