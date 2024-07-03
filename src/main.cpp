@@ -85,8 +85,17 @@ int main(int argc, char **argv){
 
     // Eigenvalues and eigenvectors
     EigenSolver<MatrixXd> solver(W);
-    std::cout << "The eigenvalues of W are: " << std::endl << solver.eigenvalues() << std::endl;
-    std::cout << "The matrix of eigenvectors of W are: " << std::endl << solver.eigenvectors() << std::endl;
+    double eigenvalue_ss = solver.eigenvalues()[13].real();
+    Eigen::VectorXd eigenvector_ss = (solver.eigenvectors().col(13)).real();
+    std::cout << "The eigenvalue for the steady state of W is: " << std::endl << eigenvalue_ss << std::endl;
+    std::cout << "The eigenvector for the steady state of W is: " << std::endl << eigenvector_ss << std::endl;
+
+    MatrixXd diff = (W * eigenvector_ss) - (eigenvalue_ss * eigenvector_ss );
+    std::cout << "Difference of eigenvalue*W - eigenvalue*eigenvector" << std::endl
+              << diff <<std::endl;
+
+    std::cout << "Sum of elements of eigenvector" << std::endl
+              << eigenvector_ss.sum() << std::endl;
 
     return 0;
 }
