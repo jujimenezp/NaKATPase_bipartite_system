@@ -1,11 +1,11 @@
 // Calculate the eigenvalues and eigenvectors of the W transition matrix
 // The matrix was constructed using eqs. from Clark et al. (2013) supplementary material
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <iostream>
 #include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Eigenvalues>
 
 using Eigen::MatrixXd;
+using Eigen::EigenSolver;
 
 int main(int argc, char **argv){
     // Initial transition rates
@@ -35,10 +35,10 @@ int main(int argc, char **argv){
     ki_bk = std::stod(argv[19]);
 
     //Other parameteres
-    double T = 297.15; // Temperature in K
-    double V = -79e-3; // Transmembrane potential in V (V_in - V_out)
-    double F = 9.648533212e4; // Faraday constant in C Mol^-1
-    double R = 8.314462618; // Ideal gas constant in J K^-1 Mol^-1
+    double T = std::stod(argv[20]); // Temperature in K
+    double V = std::stod(argv[21]); // Transmembrane potential in V (V_in - V_out)
+    double F = std::stod(argv[22]); // Faraday constant in C Mol^-1
+    double R = std::stod(argv[23]); // Ideal gas constant in J K^-1 Mol^-1
     double FV_RT = F*V/(R*T); //Exponent of the Boltzmann factor for transition rates
 
     // Transition rates taking electrical potential into account
@@ -67,7 +67,26 @@ int main(int argc, char **argv){
     W(3,2) = ko_dN1; W(3,3) = -(ko_bN1*c_Na_out+k_31+2*ko_dN); W(3,4) = ko_bN*c_Na_out;
     W(4,3) = 2*ko_dN; W(4,4) = -(ko_bN*c_Na_out+ko_bK*c_K_out+ko_dN); W(4,5) = 2*ko_bN*c_Na_out; W(4,15) = ko_dK;
     W(5,4) = ko_dN; W(5,5) = -(2*ko_bN*c_Na_out+2*ko_bK*c_K_out); W(5,6) = ko_dK;
+    W(6,5) = 2*ko_bK*c_K_out; W(6,6) = -(ko_dK+ko_bN*c_Na_out+ko_bK*c_K_out); W(6,7) = 2*ko_dK; W(6,17) = ko_dN;
+    W(7,6) = ko_bK*c_K_out; W(7,7) = -(2*ko_dK+k_32);
+    W(8,7) = k_32; W(8,8) = -k_4f; W(8,9) = k_4r;
+    W(9,8) = k_4f; W(9,9) = -(k_4r+2*ki_dK); W(9,10) = ki_bk*c_K_in;
+    W(10,9) = 2*ki_dK; W(10,10) = -(ki_bk*c_K_in+ki_bN*c_Na_in+ki_dK); W(10,11) = 2*ki_bk*c_K_in; W(10,18) = ki_dN;
+    W(11,10) = ki_dK; W(11,11) = -(2*ki_bk*c_K_in+2*ki_bN*c_Na_in); W(11,12) = ki_dN;
+    W(12,11) = 2*ki_bN*c_Na_in; W(12,12) = -(ki_dN+ki_bk*c_K_in+ki_bN*c_Na_in); W(12,13) = 2*ki_dN; W(12,16) = ki_dK;
+    W(13,0) = ki_dN1; W(13,12) = ki_bN*c_Na_in; W(13,13) = -(2*ki_dN+ki_bN1*c_Na_in); W(13,14) = k_4f;
+    W(14,3) = k_31; W(14,14) = -k_4f;
+    W(15,4) = ko_bK*c_K_out; W(15,15) = -ko_dK;
+    W(16,12) = ki_bk*c_K_in; W(16,16) = -ki_dK;
+    W(17,6) = ko_bN*c_Na_out; W(17,17) = -ko_dN;
+    W(18,10) = ki_bN*c_Na_in; W(18,18) = -ki_dN;
 
+    std::cout << W << std::endl;
+
+    // Eigenvalues and eigenvectors
+    EigenSolver<MatrixXd> solver(W);
+    std::cout << "The eigenvalues of W are: " << std::endl << solver.eigenvalues() << std::endl;
+    std::cout << "The matrix of eigenvectors of W are: " << std::endl << solver.eigenvectors() << std::endl;
 
     return 0;
 }
