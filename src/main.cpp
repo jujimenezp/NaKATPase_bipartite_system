@@ -5,41 +5,42 @@
 #include <eigen3/Eigen/Eigenvalues>
 
 using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using Eigen::EigenSolver;
 
 int main(int argc, char **argv){
+    //Parameteres
+    double T = std::stod(argv[1]); // Temperature in K
+    double V = std::stod(argv[2]); // Transmembrane potential in V (V_in - V_out)
+    double F = std::stod(argv[3]); // Faraday constant in C Mol^-1
+    double R = std::stod(argv[4]); // Ideal gas constant in J K^-1 Mol^-1
+    double FV_RT = F*V/(R*T); //Exponent of the Boltzmann factor for transition rates
+
     // Initial transition rates
     double k_1, k_2fv0, k_2rv0, ko_dN1v0, ko_bN1v0,\
         ko_dNv0, ko_bNv0, ko_dKv0, ko_bKv0, k_31,\
         k_32, k_4f, k_4r, ki_dN1v0, ki_bN1v0,\
         ki_dN, ki_bN, ki_dK, ki_bk;
 
-    k_1 = std::stod(argv[1]);
-    k_2fv0 = std::stod(argv[2]);
-    k_2rv0 = std::stod(argv[3]);
-    ko_dN1v0 = std::stod(argv[4]);
-    ko_bN1v0 = std::stod(argv[5]);
-    ko_dNv0 = std::stod(argv[6]);
-    ko_bNv0 = std::stod(argv[7]);
-    ko_dKv0 = std::stod(argv[8]);
-    ko_bKv0 = std::stod(argv[9]);
-    k_31 = std::stod(argv[10]);
-    k_32 = std::stod(argv[11]);
-    k_4f = std::stod(argv[12]);
-    k_4r = std::stod(argv[13]);
-    ki_dN1v0 = std::stod(argv[14]);
-    ki_bN1v0 = std::stod(argv[15]);
-    ki_dN = std::stod(argv[16]);
-    ki_bN = std::stod(argv[17]);
-    ki_dK = std::stod(argv[18]);
-    ki_bk = std::stod(argv[19]);
-
-    //Other parameteres
-    double T = std::stod(argv[20]); // Temperature in K
-    double V = std::stod(argv[21]); // Transmembrane potential in V (V_in - V_out)
-    double F = std::stod(argv[22]); // Faraday constant in C Mol^-1
-    double R = std::stod(argv[23]); // Ideal gas constant in J K^-1 Mol^-1
-    double FV_RT = F*V/(R*T); //Exponent of the Boltzmann factor for transition rates
+    k_1 = std::stod(argv[5]);
+    k_2fv0 = std::stod(argv[6]);
+    k_2rv0 = std::stod(argv[7]);
+    ko_dN1v0 = std::stod(argv[8]);
+    ko_bN1v0 = std::stod(argv[9]);
+    ko_dNv0 = std::stod(argv[10]);
+    ko_bNv0 = std::stod(argv[11]);
+    ko_dKv0 = std::stod(argv[12]);
+    ko_bKv0 = std::stod(argv[13]);
+    k_31 = std::stod(argv[14]);
+    k_32 = std::stod(argv[15]);
+    k_4f = std::stod(argv[16]);
+    k_4r = std::stod(argv[17]);
+    ki_dN1v0 = std::stod(argv[18]);
+    ki_bN1v0 = std::stod(argv[19]);
+    ki_dN = std::stod(argv[20]);
+    ki_bN = std::stod(argv[21]);
+    ki_dK = std::stod(argv[22]);
+    ki_bk = std::stod(argv[23]);
 
     // Transition rates taking electrical potential into account
     double k_2f = k_2fv0*exp(0.1*FV_RT);
@@ -85,17 +86,40 @@ int main(int argc, char **argv){
 
     // Eigenvalues and eigenvectors
     EigenSolver<MatrixXd> solver(W);
-    double eigenvalue_ss = solver.eigenvalues()[13].real();
-    Eigen::VectorXd eigenvector_ss = (solver.eigenvectors().col(13)).real();
-    std::cout << "The eigenvalue for the steady state of W is: " << std::endl << eigenvalue_ss << std::endl;
-    std::cout << "The eigenvector for the steady state of W is: " << std::endl << eigenvector_ss << std::endl;
+    VectorXd eigenvalues = solver.eigenvalues().real();
+    double eigenvalue_ss = eigenvalues[13];
+    VectorXd eigenvector_ss = (solver.eigenvectors().col(13)).real();
+    std::cout << "\nEigenvalues: " << std::endl
+              << eigenvalues << "\n\n";
+    std::cout << "The eigenvalue for the steady state of W is: " << eigenvalue_ss << std::endl;
+//    std::cout << "The eigenvector for the steady state of W is: " << std::endl << eigenvector_ss << std::endl;
 
-    MatrixXd diff = (W * eigenvector_ss) - (eigenvalue_ss * eigenvector_ss );
-    std::cout << "Difference of eigenvalue*W - eigenvalue*eigenvector" << std::endl
-              << diff <<std::endl;
+    std::cout << "\nNormalization: P_n/sum(P_n)" << std::endl;
 
-    std::cout << "Sum of elements of eigenvector" << std::endl
-              << eigenvector_ss.sum() << std::endl;
+    double sum_p_ss = eigenvector_ss.sum();
+    std::cout << "Sum of elements of eigenvector: "
+              << sum_p_ss << std::endl;
+
+    eigenvector_ss = eigenvector_ss / sum_p_ss;
+    std::cout << "Normalized steady state eigenvector: " << std::endl
+              << eigenvector_ss << std::endl;
+
+    std::cout.setf(std::ios::scientific);
+    double J_E2K2_in = W(8,7)*eigenvector_ss[7] - W(7,8)*eigenvector_ss[8];
+    std::cout << "Current from [E2PK+2] to [E2(K+)_2] (main cycle): " << J_E2K2_in << std::endl;
+
+    double J_E2P_in = W(5,4)*eigenvector_ss[4] - W(4,5)*eigenvector_ss[5];
+    std::cout << "Current from [E2PNa+] to [E2P] (main cycle): " << J_E2P_in << std::endl;
+
+    double J_E2K2_out = W(9,8)*eigenvector_ss[8] - W(8,9)*eigenvector_ss[9];
+    std::cout << "Current from [E2(K+)_2] to [E1K+2] (main cycle): " << J_E2K2_out << std::endl;
+
+    double J_E1PNa3_in = W(1,0)*eigenvector_ss[0] - W(0,1)*eigenvector_ss[1];
+    std::cout << "Current from [E1Na+_3] to [E1P(Na+)_3] (main cycle): " << J_E1PNa3_in << std::endl;
+
+    double J_E2Na2_in = W(14,13)*eigenvector_ss[13] - W(13,14)*eigenvector_ss[14];
+    std::cout << "Current from [E2PNa+_2] to [E2(Na+)_2] (3Na-2Na pump): " << J_E2Na2_in << std::endl;
+
 
     return 0;
 }
