@@ -4,10 +4,22 @@
 from pandas import read_csv
 import subprocess
 
+main_cpp = "src/main.cpp"
+main_exe = "bin/main.x"
+flags_cpp = ['--std=c++20', '-Wall']
+
 T=300 #Temperature
 transition_rates = read_csv("data/transition_rates.csv", header=None, sep='    ', engine='python')
 parameters = read_csv("data/parameters.csv", header=None, sep='    ', engine='python')
-params=[str(i) for i in transition_rates.iloc[:,1]]+[str(i) for i in parameters.iloc[:,1]]
+params=[str(i) for i in parameters.iloc[:,1]]+[str(i) for i in transition_rates.iloc[:,1]]
 
-subprocess.run(['g++','--std=c++20','-Wall','src/main.cpp','-o','bin/main.x'])
-subprocess.run(['./bin/main.x',*params])
+subprocess.run(['rm',main_exe],stderr=subprocess.DEVNULL)
+print('Compiling '+main_cpp+'...')
+subprocess.run(['g++',*flags_cpp,main_cpp,'-o',main_exe])
+
+print('Running '+main_exe+'...')
+try:
+    subprocess.run([main_exe,*params])
+except Exception as e:
+    print(e)
+    print('Could not run '+main_exe+'. Check runtime errors.')
