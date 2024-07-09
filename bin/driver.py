@@ -4,8 +4,8 @@
 from pandas import read_csv
 import subprocess
 
-main_cpp = "src/main.cpp"
-main_exe = "bin/main.x"
+main_cpp = "src/19_states.cpp"
+main_exe = "bin/19_states.x"
 flags_cpp = ['--std=c++20', '-Wall']
 
 T=300 #Temperature
@@ -13,7 +13,9 @@ transition_rates = read_csv("data/transition_rates.csv", header=None, sep='    '
 parameters = read_csv("data/parameters.csv", header=None, sep='    ', engine='python')
 params=[str(i) for i in parameters.iloc[:,1]]+[str(i) for i in transition_rates.iloc[:,1]]
 
+print('Deleting '+main_exe)
 subprocess.run(['rm',main_exe],stderr=subprocess.DEVNULL)
+
 print('Compiling '+main_cpp+'...')
 subprocess.run(['g++',*flags_cpp,main_cpp,'-o',main_exe])
 
