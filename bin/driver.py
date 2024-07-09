@@ -4,8 +4,8 @@
 from pandas import read_csv
 import subprocess
 
-main_cpp = "src/19_states.cpp"
-main_exe = "bin/19_states.x"
+main_cpp = "src/15_states.cpp"
+main_exe = "bin/15_states.x"
 flags_cpp = ['--std=c++20', '-Wall']
 
 T=300 #Temperature
