@@ -9,15 +9,19 @@ int main(int argc, char **argv){
                std::stod(argv[21]),std::stod(argv[22]),std::stod(argv[23]), std::stod(argv[24]), \
                std::stod(argv[25]),std::stod(argv[26]),std::stod(argv[27]));
 
-    W.conservativeResize(14,14);
-    std::cout << W << std::endl;
+    W.delete_state(18);
+    W.delete_state(17);
+    W.delete_state(16);
+    W.delete_state(15);
+    std::cout << "W:\n" << W << std::endl;
 
     solver solv;
     solv.initialize(W);
     Eigen::VectorXd eigenvalues = solv.get_eigenvalues(W);
     Eigen::MatrixXd eigenvectors = solv.get_eigenvectors(W);
+    std::cout << "\nEigenvalues: \n" << eigenvalues << std::endl;
     eigenvectors = solv.normalize_columns(eigenvectors);
-    int i = solv.steady_state_index(eigenvalues);
+    int i = solv.steady_state_index(eigenvalues, 3e-12);
     std::cout << "Steady state eigenvalue: " << eigenvalues[i] << std::endl
               << "Normalized steady state eigenvector: \n" << eigenvectors.col(i) << std::endl;
 
