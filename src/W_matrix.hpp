@@ -8,7 +8,7 @@
 #ifndef W_MATRIX_H_
 #define W_MATRIX_H_
 
-class W_matrix : public Eigen::Matrix<double,19,19>{
+class W_matrix : public Eigen::MatrixXd{
     private:
     public:
         //Parameteres
@@ -27,15 +27,13 @@ class W_matrix : public Eigen::Matrix<double,19,19>{
         // Ion concentrations (mMol)
         double c_Na_out, c_Na_in, c_K_out, c_K_in;
 
-        //W transition matrix
-        //Eigen::MatrixXd W;
 
         W_matrix(double T, double V, double F, double R, \
                  double c_Na_out, double c_Na_in, double c_K_out, double c_K_in, \
                  double  k_1, double  k_2fv0, double  k_2rv0, double  ko_dN1v0, double  ko_bN1v0, \
                  double ko_dNv0, double  ko_bNv0, double  ko_dKv0, double  ko_bKv0, \
                  double  k_31, double k_32, double  k_4f, double  k_4r, double  ki_dN1v0, \
-                 double  ki_bN1v0, double ki_dN, double  ki_bN, double  ki_dK, double  ki_bk)
+                 double  ki_bN1v0, double ki_dN, double  ki_bN, double  ki_dK, double  ki_bk) : Eigen::MatrixXd(19,19)
         {
             T=T; V=V; F=F; R=R;
             k_1=k_1; k_2fv0=k_2fv0; k_2rv0=k_2rv0; ko_dN1v0=ko_dN1v0; ko_bN1v0=ko_bN1v0;
