@@ -79,6 +79,24 @@ class W_matrix : public Eigen::MatrixXd{
             (*this)(17,6) = ko_bN*c_Na_out; (*this)(17,17) = -ko_dN;
             (*this)(18,10) = ki_bN*c_Na_in; (*this)(18,18) = -ki_dN;
         }
+
+        // Delete row and column corresponding to state index and also
+        // substract its corresponding contribution to diagonal elements
+        void delete_state(int index){
+            Eigen::MatrixXd A, B, C, D;
+
+            for(int i=0; i < (*this).cols(); i++){
+                (*this)(i,i) += (*this)(index,i);
+            }
+
+            A = (*this)(Eigen::seq(0,index-1), Eigen::seq(0,index-1));
+            B = (*this)(Eigen::seq(0,index-1), Eigen::seq(index+1, Eigen::last));
+            C = (*this)(Eigen::seq(index+1, Eigen::last), Eigen::seq(0,index-1));
+            D = (*this)(Eigen::seq(index+1, Eigen::last), Eigen::seq(index+1, Eigen::last));
+            (*this).resize((*this).rows()-1,(*this).cols()-1);
+            (*this) << A, B,
+                       C, D;
+        }
 };
 
 class solver{
