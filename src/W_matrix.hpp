@@ -2,6 +2,7 @@
 #pragma once
 
 #include <iostream>
+#include <fstream>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigenvalues>
 
