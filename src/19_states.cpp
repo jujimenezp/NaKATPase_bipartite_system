@@ -11,15 +11,16 @@ int main(int argc, char **argv){
                std::stod(argv[21]),std::stod(argv[22]),std::stod(argv[23]), std::stod(argv[24]), \
                std::stod(argv[25]),std::stod(argv[26]),std::stod(argv[27]));
     output_file << W << std::endl;
-
+    
     solver solv;
     solv.initialize(W);
     Eigen::VectorXd eigenvalues = solv.get_eigenvalues(W);
     Eigen::MatrixXd eigenvectors = solv.get_eigenvectors(W);
     eigenvectors = solv.normalize_columns(eigenvectors);
-    int i = solv.steady_state_index(eigenvalues);
+    std::cout << "\nEigenvalues: \n" << eigenvalues << std::endl;
+    int i = solv.steady_state_index(eigenvalues, 1e-11);
     output_file << "Steady state eigenvalue: " << eigenvalues[i] << std::endl
-                << "Normalized steady state eigenvector: \n" << eigenvectors.col(i) << std::endl;
+                << "\nNormalized steady state eigenvector: \n" << eigenvectors.col(i) << std::endl;
 
     // Cycles currents
     double J_E2K2_in = solv.get_current(W, eigenvectors.col(i), 7, 8);
