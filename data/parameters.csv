@@ -1,8 +1,9 @@
-T    297.15
-V    -79e-3
-F    9.648533212e4
-R    8.314462618
-c_Na_out    140
-c_Na_in    15
-c_K_out    4
-c_K_in    120
+Parameters,
+T(K),    297.15
+V(V),    -79e-3
+F(C/Mol),    9.648533212e4
+R(JK^-1Mol^-1),    8.314462618
+c_Na_out(mMol^-1),    140
+c_Na_in(mMol^-1),    15
+c_K_out(mMol^-1),    4
+c_K_in(mMol^-1),    120
