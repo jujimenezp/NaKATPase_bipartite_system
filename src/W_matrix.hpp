@@ -29,18 +29,19 @@ class W_matrix : public Eigen::MatrixXd{
         double c_Na_out, c_Na_in, c_K_out, c_K_in;
 
 
-        W_matrix(double T, double V, double F, double R, \
-                 double c_Na_out, double c_Na_in, double c_K_out, double c_K_in, \
-                 double  k_1, double  k_2fv0, double  k_2rv0, double  ko_dN1v0, double  ko_bN1v0, \
-                 double ko_dNv0, double  ko_bNv0, double  ko_dKv0, double  ko_bKv0, \
-                 double  k_31, double k_32, double  k_4f, double  k_4r, double  ki_dN1v0, \
-                 double  ki_bN1v0, double ki_dN, double  ki_bN, double  ki_dK, double  ki_bk) : Eigen::MatrixXd(19,19)
+        W_matrix(double Ti, double Vi, double Fi, double Ri, \
+                 double c_Na_outi, double c_Na_ini, double c_K_outi, double c_K_ini, \
+                 double  k_1i, double  k_2fv0i, double  k_2rv0i, double  ko_dN1v0i, double  ko_bN1v0i, \
+                 double ko_dNv0i, double  ko_bNv0i, double  ko_dKv0i, double  ko_bKv0i, \
+                 double  k_31i, double k_32i, double  k_4fi, double  k_4ri, double  ki_dN1v0i, \
+                 double  ki_bN1v0i, double ki_dNi, double  ki_bNi, \
+                 double  ki_dKi, double  ki_bki) : Eigen::MatrixXd(19,19)
         {
-            T=T; V=V; F=F; R=R;
-            k_1=k_1; k_2fv0=k_2fv0; k_2rv0=k_2rv0; ko_dN1v0=ko_dN1v0; ko_bN1v0=ko_bN1v0;
-            ko_dNv0=ko_dNv0; ko_bNv0=ko_bNv0; ko_dKv0=ko_dKv0; ko_bKv0=ko_bKv0;
-            k_31=k_31; k_32=k_32; k_4f=k_4f; k_4r=k_4r; ki_dN1v0=ki_dN1v0;
-            ki_bN1v0=ki_bN1v0; ki_dN=ki_dN; ki_bN=ki_bN; ki_dK=ki_dK; ki_bk=ki_bk;
+            T=Ti; V=Vi; F=Fi; R=Ri;
+            k_1=k_1i; k_2fv0=k_2fv0i; k_2rv0=k_2rv0i; ko_dN1v0=ko_dN1v0i; ko_bN1v0=ko_bN1v0i;
+            ko_dNv0=ko_dNv0i; ko_bNv0=ko_bNv0i; ko_dKv0=ko_dKv0i; ko_bKv0=ko_bKv0i;
+            k_31=k_31i; k_32=k_32i; k_4f=k_4fi; k_4r=k_4ri; ki_dN1v0=ki_dN1v0i;
+            ki_bN1v0=ki_bN1v0i; ki_dN=ki_dNi; ki_bN=ki_bNi; ki_dK=ki_dKi; ki_bk=ki_bki;
 
             FVoRT = F*V/(R*T);
 
@@ -55,7 +56,7 @@ class W_matrix : public Eigen::MatrixXd{
             ki_dN1 = ki_dN1v0*std::exp(-0.25*FVoRT);
             ki_bN1 = ki_bN1v0*std::exp(0.25*FVoRT);
 
-            c_Na_out=c_Na_out; c_Na_in=c_Na_in; c_K_out=c_K_out; c_K_in=c_K_in;
+            c_Na_out=c_Na_outi; c_Na_in=c_Na_ini; c_K_out=c_K_outi; c_K_in=c_K_ini;
 
             //W = Eigen::MatrixXd::Zero(19,19);
             (*this).setZero();
