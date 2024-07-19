@@ -2,6 +2,7 @@
 
 // Free energy available by ATP hydrolysis
 double G_ATP(const solver &solv, const W_matrix &W, const Eigen::VectorXd &v);
+Eigen::VectorXd Clarke_concentrations(const Eigen::MatrixXd &W);
 
 int main(int argc, char **argv){
 
@@ -24,9 +25,6 @@ int main(int argc, char **argv){
     int i = solv.steady_state_index(eigenvalues, 1e-11);
     output_file << "Steady state eigenvalue: " << eigenvalues[i] << std::endl
                 << "\nNormalized steady state eigenvector: \n" << eigenvectors.col(i) << std::endl;
-
-    //Normalize to obtain fluxes according to Clarke et al.
-    //eigenvectors = 683.4895730078262*eigenvectors;
 
     // Cycles currents
     double J_E2K2_in = solv.get_current(W, eigenvectors.col(i), 7, 8);
@@ -60,8 +58,28 @@ int main(int argc, char **argv){
 
     output_file.close();
 
-    //Trying to find the eigenstate of Clarke, et al.
-    Eigen::VectorXd P(15);
+
+    //Finding the eigenstate of Clarke, et al.
+    Eigen::VectorXd P = Clarke_concentrations(W);
+
+    std::cout << "Determining the eigenstate of Clarke et al.\n"
+        << std::setw(8) << "P(i)"<<std::setw(15)<<"Clarke et al"<<std::setw(20)<<"This simulation"<< std::setw(15)<<"Discrepancy" << std::endl;
+
+    //Normalization
+    //eigenvectors.col(i)= eigenvectors.col(i)*683.4895730078262;
+    eigenvectors.col(i)= eigenvectors.col(i)*P.sum();
+
+    for(int j=0; j < 19; j++){
+        std::cout << std::setw(8) << "P("+std::to_string(j)+") = " << std::setw(15) << P(j) << std::setw(20) << eigenvectors(j,i) <<std::setw(15)<< (P(j)-eigenvectors(j,i))/P(j) << std::endl;
+    }
+
+    std::cout << std::setw(8) << "Sum = " << std::setw(15) << P.sum() << std::setw(20) << eigenvectors.col(i).sum() << std::endl;
+
+    return 0;
+}
+
+Eigen::VectorXd Clarke_concentrations(const Eigen::MatrixXd &W){
+    Eigen::VectorXd P(19);
     double C1 = 0.002;
     double C2 = 0.724;
     double J = C1+C2;
@@ -79,23 +97,12 @@ int main(int argc, char **argv){
         P(j) = (J+W(j,j+1)*P[j+1])/W(j+1,j);
     }
 
-    std::cout << "Determining the eigenstate of Clarke et al.\n"
-        << std::setw(8) << "P(i)"<<std::setw(15)<<"Clarke et al"<<std::setw(20)<<"This simulation"<< std::setw(15)<<"Discrepancy" << std::endl;
-
-    //Normalization
-    eigenvectors.col(i)= eigenvectors.col(i)*683.4895730078262;
-
-    for(int j=0; j < 15; j++){
-        std::cout << std::setw(8) << "P("+std::to_string(j)+") = " << std::setw(15) << P(j) << std::setw(20) << eigenvectors(j,i) <<std::setw(15)<< (P(j)-eigenvectors(j,i))/P(j) << std::endl;
-    }
-
-    Eigen::VectorXd v = eigenvectors.col(i);
-
-    std::cout << std::setw(8) << "Sum = " << std::setw(15) << P.sum() << std::setw(20) << v.head(15).sum() << std::endl;
-
-    return 0;
+    P(15) = W(15,4)*P(4)/W(4,15);
+    P(16) = W(16,12)*P(12)/W(12,16);
+    P(17) = W(17,6)*P(6)/W(6,17);
+    P(18) = W(18,10)*P(10)/W(10,18);
+    return P;
 }
-
 
 double G_ATP(const solver &solv, const W_matrix &W, const Eigen::VectorXd &v){
     double G=0;
