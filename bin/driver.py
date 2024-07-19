@@ -10,7 +10,7 @@ flags_cpp = ['--std=c++20', '-Wall']
 
 transition_rates = read_csv("data/transition_rates.csv", skiprows=0, sep=',')
 parameters = read_csv("data/parameters.csv", skiprows=0, sep=',')
-params=[str(i) for i in parameters.iloc[:,1]]+[str(i) for i in transition_rates.iloc[:,1]]
+params=[str(i) for i in transition_rates.iloc[:,1]]+[str(i) for i in parameters.iloc[:,1]]
 
 print('Deleting '+main_exe)
 subprocess.run(['rm',main_exe],stderr=subprocess.DEVNULL)

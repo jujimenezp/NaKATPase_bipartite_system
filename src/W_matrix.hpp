@@ -1,6 +1,7 @@
 // Store the W matrix coefficients for multiple use
 #pragma once
 
+#include <iomanip>
 #include <iostream>
 #include <fstream>
 #include <eigen3/Eigen/Dense>
@@ -29,13 +30,12 @@ class W_matrix : public Eigen::MatrixXd{
         double c_Na_out, c_Na_in, c_K_out, c_K_in;
 
 
-        W_matrix(double Ti, double Vi, double Fi, double Ri, \
-                 double c_Na_outi, double c_Na_ini, double c_K_outi, double c_K_ini, \
-                 double  k_1i, double  k_2fv0i, double  k_2rv0i, double  ko_dN1v0i, double  ko_bN1v0i, \
+        W_matrix(double  k_1i, double  k_2fv0i, double  k_2rv0i, double  ko_dN1v0i, double  ko_bN1v0i, \
                  double ko_dNv0i, double  ko_bNv0i, double  ko_dKv0i, double  ko_bKv0i, \
                  double  k_31i, double k_32i, double  k_4fi, double  k_4ri, double  ki_dN1v0i, \
-                 double  ki_bN1v0i, double ki_dNi, double  ki_bNi, \
-                 double  ki_dKi, double  ki_bki) : Eigen::MatrixXd(19,19)
+                 double  ki_bN1v0i, double ki_dNi, double  ki_bNi, double  ki_dKi, double  ki_bki, \
+                 double Ti, double Vi, double Fi, double Ri,            \
+                 double c_Na_outi, double c_Na_ini, double c_K_outi, double c_K_ini) : Eigen::MatrixXd(19,19)
         {
             T=Ti; V=Vi; F=Fi; R=Ri;
             k_1=k_1i; k_2fv0=k_2fv0i; k_2rv0=k_2rv0i; ko_dN1v0=ko_dN1v0i; ko_bN1v0=ko_bN1v0i;
@@ -127,7 +127,10 @@ class solver{
         }
 
         // Calculate current J_ji going from state i to state j.
-        double get_current(const Eigen::MatrixXd &W, const Eigen::VectorXd &v, int i, int j);
+        double get_current(const Eigen::MatrixXd &W, const Eigen::VectorXd &v, int i, int j) const;
+
+        // Work done in hte 3Na_2K cycle
+        double Work_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v) const;
 };
 
 int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
@@ -143,7 +146,57 @@ int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
     }
 }
 
-double solver::get_current(const Eigen::MatrixXd &W, const Eigen::VectorXd &v, int i, int j){
+double solver::get_current(const Eigen::MatrixXd &W, const Eigen::VectorXd &v, int i, int j)
+const{
     return W(j,i)*v[i]-W(i,j)*v[j];
 }
 #endif // W_MATRIX_H_
+
+double solver::Work_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v)
+const{
+    double work=0;
+    //E2PNa+3 -> E2PNa+2
+    double J_E2PNa2_in = this->get_current(W, v, 2,3);
+    work += J_E2PNa2_in * W.R * W.T * log(W.c_Na_out);
+
+    //E2PNa+2 -> E2PNa+
+    double J_E2PNa_in = this->get_current(W, v, 3, 4);
+    work += J_E2PNa_in * W.R * W.T * log(W.c_Na_out);
+
+    //E2PNa+ -> E2P
+    double J_E2P_in = this->get_current(W, v, 4, 5);
+    work += J_E2P_in * W.R * W.T * log(W.c_Na_out);
+
+    //E2P -> E2PK+
+    double J_E2PK_in = this->get_current(W, v, 5, 6);
+    work -= J_E2PK_in * W.R * W.T * log(W.c_K_out);
+
+    //E2PK+ -> E2PK+2
+    double J_E2PK2_in = this->get_current(W, v, 6, 7);
+    work -= J_E2PK2_in * W.R * W.T * log(W.c_K_out);
+
+    //E1K+2 -> E1K+
+    double J_E1K_in = this->get_current(W, v, 9, 10);
+    work += J_E1K_in * W.R * W.T * log(W.c_K_in);
+
+    //E1K+ -> E1
+    double J_E1_in = this->get_current(W, v, 10, 11);
+    work += J_E1_in * W.R * W.T * log(W.c_K_in);
+
+    //E1 -> E1Na+
+    double J_E1Na_in = this->get_current(W, v, 11, 12);
+    work -= J_E1Na_in * W.R * W.T * log(W.c_Na_in);
+
+    //E1Na+ -> E1Na+2
+    double J_E1Na2_in = this->get_current(W, v, 12, 13);
+    work -= J_E1Na2_in * W.R * W.T * log(W.c_Na_in);
+
+    //E1Na+2 -> E1Na+3
+    double J_E1Na3_in = this->get_current(W, v, 13, 0);
+    work -= J_E1Na3_in * W.R * W.T * log(W.c_Na_in);
+
+    // Effect of the transmembrane potential
+    work -= W.F*W.V;
+
+    return work;
+}
