@@ -27,7 +27,7 @@ class W_matrix : public Eigen::MatrixXd{
         double k_2f,k_2r,ko_dN1,ko_bN1,ko_dN,ko_bN,ko_dK,ko_bK,ki_dN1,ki_bN1;
 
         // Ion concentrations (mMol)
-        double c_Na_out, c_Na_in, c_K_out, c_K_in;
+        double c_Na_out, c_Na_in, c_K_out, c_K_in, c_ATP, c_ADP, c_P, K_h;
 
 
         W_matrix(double  k_1i, double  k_2fv0i, double  k_2rv0i, double  ko_dN1v0i, double  ko_bN1v0i, \
@@ -35,7 +35,8 @@ class W_matrix : public Eigen::MatrixXd{
                  double  k_31i, double k_32i, double  k_4fi, double  k_4ri, double  ki_dN1v0i, \
                  double  ki_bN1v0i, double ki_dNi, double  ki_bNi, double  ki_dKi, double  ki_bki, \
                  double Ti, double Vi, double Fi, double Ri,            \
-                 double c_Na_outi, double c_Na_ini, double c_K_outi, double c_K_ini) : Eigen::MatrixXd(19,19)
+                 double c_Na_outi, double c_Na_ini, double c_K_outi, double c_K_ini, \
+                 double c_ATPi, double c_ADPi, double c_Pi, double K_hi) : Eigen::MatrixXd(19,19)
         {
             T=Ti; V=Vi; F=Fi; R=Ri;
             k_1=k_1i; k_2fv0=k_2fv0i; k_2rv0=k_2rv0i; ko_dN1v0=ko_dN1v0i; ko_bN1v0=ko_bN1v0i;
@@ -57,6 +58,7 @@ class W_matrix : public Eigen::MatrixXd{
             ki_bN1 = ki_bN1v0*std::exp(0.25*FVoRT);
 
             c_Na_out=c_Na_outi; c_Na_in=c_Na_ini; c_K_out=c_K_outi; c_K_in=c_K_ini;
+            c_ATP=c_ATPi; c_ADP=c_ADPi, c_P=c_Pi, K_h=K_hi;
 
             //W = Eigen::MatrixXd::Zero(19,19);
             (*this).setZero();
@@ -129,8 +131,11 @@ class solver{
         // Calculate current J_ji going from state i to state j.
         double get_current(const Eigen::MatrixXd &W, const Eigen::VectorXd &v, int i, int j) const;
 
-        // Work done in hte 3Na_2K cycle
+        // Work done in the 3Na_2K cycle
         double Work_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v) const;
+
+        // Energy available through ATP hydrolysis
+        double Energy_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v);
 };
 
 int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
@@ -199,4 +204,13 @@ const{
     work -= W.F*W.V;
 
     return work;
+}
+
+double solver::Energy_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
+    double G = 0;
+    double J_E1PNa3_in = this->get_current(W, v, 0, 1);
+    G += J_E1PNa3_in * W.R * W.T * log(W.c_ADP/(W.c_ATP*W.K_h));
+    double J_E2K2_in = this->get_current(W, v, 7, 8);
+    G += J_E2K2_in * W.R * W.T * log(W.c_P);
+    return G;
 }

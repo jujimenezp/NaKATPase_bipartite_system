@@ -1,7 +1,6 @@
 #include "W_matrix.hpp"
 
-// Free energy available by ATP hydrolysis
-double G_ATP(const solver &solv, const W_matrix &W, const Eigen::VectorXd &v);
+// Find concentrations for steady state of Clarke et al.
 Eigen::VectorXd Clarke_concentrations(const Eigen::MatrixXd &W);
 
 int main(int argc, char **argv){
@@ -13,7 +12,8 @@ int main(int argc, char **argv){
                std::stod(argv[13]),std::stod(argv[14]),std::stod(argv[15]), std::stod(argv[16]), \
                std::stod(argv[17]),std::stod(argv[18]),std::stod(argv[19]), std::stod(argv[20]), \
                std::stod(argv[21]),std::stod(argv[22]),std::stod(argv[23]), std::stod(argv[24]), \
-               std::stod(argv[25]),std::stod(argv[26]),std::stod(argv[27]));
+               std::stod(argv[25]),std::stod(argv[26]),std::stod(argv[27]), std::stod(argv[28]), \
+               std::stod(argv[29]),std::stod(argv[30]),std::stod(argv[31]));
     output_file << W << std::endl;
     
     solver solv;
@@ -21,10 +21,17 @@ int main(int argc, char **argv){
     Eigen::VectorXd eigenvalues = solv.get_eigenvalues(W);
     Eigen::MatrixXd eigenvectors = solv.get_eigenvectors(W);
     eigenvectors = solv.normalize_columns(eigenvectors);
+
+    // Scaling according to Clarke et al.
+    Eigen::VectorXd P = Clarke_concentrations(W);
+    eigenvectors = eigenvectors*P.sum();
     std::cout << "\nEigenvalues: \n" << eigenvalues << std::endl;
+
+    // Finding the steady state eigenvalue
     int i = solv.steady_state_index(eigenvalues, 1e-11);
     output_file << "Steady state eigenvalue: " << eigenvalues[i] << std::endl
                 << "\nNormalized steady state eigenvector: \n" << eigenvectors.col(i) << std::endl;
+
 
     // Cycles currents
     double J_E2K2_in = solv.get_current(W, eigenvectors.col(i), 7, 8);
@@ -54,20 +61,22 @@ int main(int argc, char **argv){
 
     // Work done in the 3Na-2K path
     double work_3Na_2K = solv.Work_3Na_2K(W, eigenvectors.col(i));
-    output_file << "\nWork done in the 3Na_2K path: " << work_3Na_2K << std::endl;
+    output_file << "\nWork rate in the 3Na_2K path: " << work_3Na_2K << std::endl;
+    double energy_3Na_2K = solv.Energy_3Na_2K(W, eigenvectors.col(i));
+    output_file << "Energy rate by ATP hydrolysis: " << energy_3Na_2K << std::endl
+                << "Heat rate through the 3Na_2K path:" << -energy_3Na_2K-work_3Na_2K << std::endl;
+
 
     output_file.close();
 
 
     //Finding the eigenstate of Clarke, et al.
-    Eigen::VectorXd P = Clarke_concentrations(W);
 
     std::cout << "Determining the eigenstate of Clarke et al.\n"
         << std::setw(8) << "P(i)"<<std::setw(15)<<"Clarke et al"<<std::setw(20)<<"This simulation"<< std::setw(15)<<"Discrepancy" << std::endl;
 
     //Normalization
-    //eigenvectors.col(i)= eigenvectors.col(i)*683.4895730078262;
-    eigenvectors.col(i)= eigenvectors.col(i)*P.sum();
+    //eigenvectors.col(i)= eigenvectors.col(i)*P.sum();
 
     for(int j=0; j < 19; j++){
         std::cout << std::setw(8) << "P("+std::to_string(j)+") = " << std::setw(15) << P(j) << std::setw(20) << eigenvectors(j,i) <<std::setw(15)<< (P(j)-eigenvectors(j,i))/P(j) << std::endl;
@@ -102,10 +111,4 @@ Eigen::VectorXd Clarke_concentrations(const Eigen::MatrixXd &W){
     P(17) = W(17,6)*P(6)/W(6,17);
     P(18) = W(18,10)*P(10)/W(10,18);
     return P;
-}
-
-double G_ATP(const solver &solv, const W_matrix &W, const Eigen::VectorXd &v){
-    double G=0;
-
-
 }

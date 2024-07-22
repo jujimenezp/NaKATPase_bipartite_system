@@ -7,3 +7,7 @@ c_Na_out(Mol),    0.140
 c_Na_in(Mol),    0.015
 c_K_out(Mol),    0.004
 c_K_in(Mol),    0.120
+c_ATP(Mol),    0.005
+c_ADP(Mol),    0.0001
+c_P(Mol),     0.005
+K_h(Mol),     400000
