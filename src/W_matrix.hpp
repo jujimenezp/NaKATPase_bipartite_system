@@ -106,6 +106,8 @@ class W_matrix : public Eigen::MatrixXd{
 class solver{
     private:
     public:
+        double kB = 1.380649e-23;
+        double e = 1.60217663e-19;
         Eigen::EigenSolver<Eigen::MatrixXd> solver;
         void initialize(const Eigen::MatrixXd &W){solver = Eigen::EigenSolver<Eigen::MatrixXd>(W);}
         Eigen::VectorXd get_eigenvalues(const Eigen::MatrixXd &W){return solver.eigenvalues().real();}
@@ -136,6 +138,12 @@ class solver{
 
         // Energy available through ATP hydrolysis
         double Energy_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v);
+
+        // Entropy of the system and the environment
+        double System_entropy(const Eigen::VectorXd &v);
+
+        // Eficiency of the transport through the 3Na_2K path
+        double Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v);
 };
 
 int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
@@ -155,53 +163,64 @@ double solver::get_current(const Eigen::MatrixXd &W, const Eigen::VectorXd &v, i
 const{
     return W(j,i)*v[i]-W(i,j)*v[j];
 }
-#endif // W_MATRIX_H_
 
 double solver::Work_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v)
 const{
     double work=0;
     //E2PNa+3 -> E2PNa+2
     double J_E2PNa2_in = this->get_current(W, v, 2,3);
-    work += J_E2PNa2_in * W.R * W.T * log(W.c_Na_out);
+    work += J_E2PNa2_in * kB * W.T * log(W.c_Na_out);
 
     //E2PNa+2 -> E2PNa+
     double J_E2PNa_in = this->get_current(W, v, 3, 4);
-    work += J_E2PNa_in * W.R * W.T * log(W.c_Na_out);
+    work += J_E2PNa_in * kB * W.T * log(W.c_Na_out);
 
     //E2PNa+ -> E2P
     double J_E2P_in = this->get_current(W, v, 4, 5);
-    work += J_E2P_in * W.R * W.T * log(W.c_Na_out);
+    work += J_E2P_in * kB * W.T * log(W.c_Na_out);
 
     //E2P -> E2PK+
     double J_E2PK_in = this->get_current(W, v, 5, 6);
-    work -= J_E2PK_in * W.R * W.T * log(W.c_K_out);
+    work -= J_E2PK_in * kB * W.T * log(W.c_K_out);
 
     //E2PK+ -> E2PK+2
     double J_E2PK2_in = this->get_current(W, v, 6, 7);
-    work -= J_E2PK2_in * W.R * W.T * log(W.c_K_out);
+    work -= J_E2PK2_in * kB * W.T * log(W.c_K_out);
 
     //E1K+2 -> E1K+
     double J_E1K_in = this->get_current(W, v, 9, 10);
-    work += J_E1K_in * W.R * W.T * log(W.c_K_in);
+    work += J_E1K_in * kB * W.T * log(W.c_K_in);
 
     //E1K+ -> E1
     double J_E1_in = this->get_current(W, v, 10, 11);
-    work += J_E1_in * W.R * W.T * log(W.c_K_in);
+    work += J_E1_in * kB * W.T * log(W.c_K_in);
 
     //E1 -> E1Na+
     double J_E1Na_in = this->get_current(W, v, 11, 12);
-    work -= J_E1Na_in * W.R * W.T * log(W.c_Na_in);
+    work -= J_E1Na_in * kB * W.T * log(W.c_Na_in);
 
     //E1Na+ -> E1Na+2
     double J_E1Na2_in = this->get_current(W, v, 12, 13);
-    work -= J_E1Na2_in * W.R * W.T * log(W.c_Na_in);
+    work -= J_E1Na2_in * kB * W.T * log(W.c_Na_in);
 
     //E1Na+2 -> E1Na+3
     double J_E1Na3_in = this->get_current(W, v, 13, 0);
-    work -= J_E1Na3_in * W.R * W.T * log(W.c_Na_in);
+    work -= J_E1Na3_in * kB * W.T * log(W.c_Na_in);
 
     // Effect of the transmembrane potential
-    work -= W.F*W.V;
+    work -= J_E1Na3_in * e * W.V;
+
+    std::cout << J_E2PNa2_in * kB * W.T * log(W.c_Na_out) << std::endl
+              << J_E2PNa_in * kB * W.T * log(W.c_Na_out) << std::endl
+              << J_E2P_in * kB * W.T * log(W.c_Na_out) << std::endl
+              << -J_E2PK_in * kB * W.T * log(W.c_K_out) << std::endl
+              << -J_E2PK2_in * kB * W.T * log(W.c_K_out) << std::endl
+              << J_E1K_in * kB * W.T * log(W.c_K_in) << std::endl
+              << J_E1_in * kB * W.T * log(W.c_K_in) << std::endl
+              << -J_E1Na_in * kB * W.T * log(W.c_Na_in) << std::endl
+              << -J_E1Na2_in * kB * W.T * log(W.c_Na_in) << std::endl
+              << -J_E1Na3_in * kB * W.T * log(W.c_Na_in) << std::endl
+              << -J_E1Na3_in * e * W.V << std::endl;
 
     return work;
 }
@@ -209,8 +228,69 @@ const{
 double solver::Energy_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
     double G = 0;
     double J_E1PNa3_in = this->get_current(W, v, 0, 1);
-    G += J_E1PNa3_in * W.R * W.T * log(W.c_ADP/(W.c_ATP*W.K_h));
+    G += J_E1PNa3_in * kB * W.T * log(W.c_ADP/(W.c_ATP*W.K_h));
     double J_E2K2_in = this->get_current(W, v, 7, 8);
-    G += J_E2K2_in * W.R * W.T * log(W.c_P);
+    G += J_E2K2_in * kB * W.T * log(W.c_P);
     return G;
 }
+
+double solver::System_entropy(const Eigen::VectorXd &v){
+    double sum=0;
+    for(auto& p: v){
+        sum -= p*log2(p);
+    }
+    return sum;
+}
+
+
+double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
+
+    double W_Na=0, W_K=0, W_ATP=0;
+    double W_in=0, W_out=0;
+    //E2PNa+3 -> E2PNa+2
+    double J_E2PNa2_in = this->get_current(W, v, 2,3);
+    //E2PNa+2 -> E2PNa+
+    double J_E2PNa_in = this->get_current(W, v, 3, 4);
+    //E2PNa+ -> E2P
+    double J_E2P_in = this->get_current(W, v, 4, 5);
+    //E1 -> E1Na+
+    double J_E1Na_in = this->get_current(W, v, 11, 12);
+    //E1Na+ -> E1Na+2
+    double J_E1Na2_in = this->get_current(W, v, 12, 13);
+    //E1Na+2 -> E1Na+3
+    double J_E1Na3_in = this->get_current(W, v, 13, 0);
+
+    W_Na += J_E2PNa2_in * kB * W.T * log(W.c_Na_out);
+    W_Na += J_E2PNa_in * kB * W.T * log(W.c_Na_out);
+    W_Na += J_E2P_in * kB * W.T * log(W.c_Na_out);
+    W_Na -= J_E1Na_in * kB * W.T * log(W.c_Na_in);
+    W_Na -= J_E1Na2_in * kB * W.T * log(W.c_Na_in);
+    W_Na -= J_E1Na3_in * kB * W.T * log(W.c_Na_in);
+    W_Na -= 3*J_E1Na3_in*e*W.V;
+
+    //E2P -> E2PK+
+    double J_E2PK_in = this->get_current(W, v, 5, 6);
+    //E2PK+ -> E2PK+2
+    double J_E2PK2_in = this->get_current(W, v, 6, 7);
+    //E1K+2 -> E1K+
+    double J_E1K_in = this->get_current(W, v, 9, 10);
+    //E1K+ -> E1
+    double J_E1_in = this->get_current(W, v, 10, 11);
+
+    W_K -= J_E2PK_in * kB * W.T * log(W.c_K_out);
+    W_K -= J_E2PK2_in * kB * W.T * log(W.c_K_out);
+    W_K += J_E1K_in * kB * W.T * log(W.c_K_in);
+    W_K += J_E1_in * kB * W.T * log(W.c_K_in);
+    W_K += 2*J_E1Na3_in*e*W.V;
+
+    double J_E1PNa3_in = this->get_current(W, v, 0, 1);
+    double J_E2K2_in = this->get_current(W, v, 7, 8);
+
+    W_ATP += J_E1PNa3_in * kB * W.T * log(W.c_ADP/(W.c_ATP*W.K_h));
+    W_ATP += J_E2K2_in * kB * W.T * log(W.c_P);
+
+    // Effect of the transmembrane potential
+    return (W_Na+W_K)/-W_ATP;
+
+}
+#endif // W_MATRIX_H_

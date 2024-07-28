@@ -4,8 +4,8 @@
 from pandas import read_csv
 import subprocess
 
-main_cpp = "src/19_states.cpp"
-main_exe = "bin/19_states.x"
+main_cpp = "src/14_states.cpp"
+main_exe = "bin/14_states.x"
 flags_cpp = ['--std=c++20', '-Wall']
 
 transition_rates = read_csv("data/transition_rates.csv", skiprows=0, sep=',')
