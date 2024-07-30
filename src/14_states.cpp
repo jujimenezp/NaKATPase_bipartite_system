@@ -58,6 +58,10 @@ int main(int argc, char **argv){
     eff = solv.Efficiency_3Na_2K(W, eigenvectors.col(i));
     std::cout << "\nEfficiency: " << eff << std::endl;
 
+    // Information of bipartite system
+    double I_dot_X = solv.Idot_X(W, eigenvectors.col(i));
+    std::cout << "\nInformation of bipartite system\ndI_X/dt = " << I_dot_X << std::endl;
+
     output_file.close();
     return 0;
 }

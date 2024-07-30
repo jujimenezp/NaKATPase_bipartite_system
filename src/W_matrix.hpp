@@ -144,6 +144,10 @@ class solver{
 
         // Eficiency of the transport through the 3Na_2K path
         double Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v);
+
+        // Information flow in bipartite system
+        double Idot_X(const W_matrix &W, const Eigen::VectorXd &v);
+        double Idot_Y(const W_matrix &W, const Eigen::VectorXd &v);
 };
 
 int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
@@ -210,17 +214,17 @@ const{
     // Effect of the transmembrane potential
     work -= J_E1Na3_in * e * W.V;
 
-    std::cout << J_E2PNa2_in * kB * W.T * log(W.c_Na_out) << std::endl
-              << J_E2PNa_in * kB * W.T * log(W.c_Na_out) << std::endl
-              << J_E2P_in * kB * W.T * log(W.c_Na_out) << std::endl
-              << -J_E2PK_in * kB * W.T * log(W.c_K_out) << std::endl
-              << -J_E2PK2_in * kB * W.T * log(W.c_K_out) << std::endl
-              << J_E1K_in * kB * W.T * log(W.c_K_in) << std::endl
-              << J_E1_in * kB * W.T * log(W.c_K_in) << std::endl
-              << -J_E1Na_in * kB * W.T * log(W.c_Na_in) << std::endl
-              << -J_E1Na2_in * kB * W.T * log(W.c_Na_in) << std::endl
-              << -J_E1Na3_in * kB * W.T * log(W.c_Na_in) << std::endl
-              << -J_E1Na3_in * e * W.V << std::endl;
+    // std::cout << J_E2PNa2_in * kB * W.T * log(W.c_Na_out) << std::endl
+    //           << J_E2PNa_in * kB * W.T * log(W.c_Na_out) << std::endl
+    //           << J_E2P_in * kB * W.T * log(W.c_Na_out) << std::endl
+    //           << -J_E2PK_in * kB * W.T * log(W.c_K_out) << std::endl
+    //           << -J_E2PK2_in * kB * W.T * log(W.c_K_out) << std::endl
+    //           << J_E1K_in * kB * W.T * log(W.c_K_in) << std::endl
+    //           << J_E1_in * kB * W.T * log(W.c_K_in) << std::endl
+    //           << -J_E1Na_in * kB * W.T * log(W.c_Na_in) << std::endl
+    //           << -J_E1Na2_in * kB * W.T * log(W.c_Na_in) << std::endl
+    //           << -J_E1Na3_in * kB * W.T * log(W.c_Na_in) << std::endl
+    //           << -J_E1Na3_in * e * W.V << std::endl;
 
     return work;
 }
@@ -246,7 +250,6 @@ double solver::System_entropy(const Eigen::VectorXd &v){
 double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
 
     double W_Na=0, W_K=0, W_ATP=0;
-    double W_in=0, W_out=0;
     //E2PNa+3 -> E2PNa+2
     double J_E2PNa2_in = this->get_current(W, v, 2,3);
     //E2PNa+2 -> E2PNa+
@@ -289,8 +292,38 @@ double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
     W_ATP += J_E1PNa3_in * kB * W.T * log(W.c_ADP/(W.c_ATP*W.K_h));
     W_ATP += J_E2K2_in * kB * W.T * log(W.c_P);
 
+    std::cout << "\nW_ATP: " << W_ATP << std::endl
+              << "W_Na: " << W_Na << std::endl
+              << "W_K: " << W_K << std::endl;
+
     // Effect of the transmembrane potential
     return (W_Na+W_K)/-W_ATP;
 
+}
+
+double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P){
+    double Idot_x = 0;
+    // The marginal probabilities of being on E1 or E2P
+    double P_E1=0,P_E2P=0;
+
+    P_E1 += P(0);
+    for(int i=9; i <= 13; i++){P_E1 += P(i);}
+    for(int i=2; i <= 7; i++){P_E2P += P(i);}
+    std::cout << "\nMarginal probabilities" << std::endl
+              << "P(E1) = " << P_E1 << std::endl
+              << "P(E2P) = " << P_E2P << std::endl;
+
+    //Currents that are not 0
+    double J_01 = this->get_current(W, P, 0, 1);
+    double J_21 = this->get_current(W, P, 2, 1);
+    double J_78 = this->get_current(W, P, 8, 7);
+    double J_98 = this->get_current(W, P, 9, 8);
+
+    Idot_x += J_01*log2(P(0)/P_E1) \
+           + J_21*log2(P(2)/P_E2P) \
+           + J_78*log2(P(7)/P_E2P) \
+           + J_98*log2(P(9)/P_E1);
+
+    return Idot_x;
 }
 #endif // W_MATRIX_H_
