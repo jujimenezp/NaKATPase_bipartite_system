@@ -316,7 +316,7 @@ double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P){
     //Currents that are not 0
     double J_01 = this->get_current(W, P, 0, 1);
     double J_21 = this->get_current(W, P, 2, 1);
-    double J_78 = this->get_current(W, P, 8, 7);
+    double J_78 = this->get_current(W, P, 7, 8);
     double J_98 = this->get_current(W, P, 9, 8);
 
     Idot_x += J_01*log2(P(0)/P_E1) \
@@ -325,5 +325,44 @@ double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P){
            + J_98*log2(P(9)/P_E1);
 
     return Idot_x;
+}
+
+double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P){
+    double Idot_y = 0;
+
+    // Marginal probabilities
+    double P_Na3, P_Na2, P_Na, P_K, P_K2, P_0;
+    P_Na3 = P(0) + P(1) + P(2);
+    P_Na2 = P(13) + P(3);
+    P_Na = P(12) + P(4);
+    P_0 = P(11) + P(5);
+    P_K = P(10) + P(6);
+    P_K2 = P(9) + P(8) + P(7);
+
+    // Currents
+    double J_E1Na3_in = this->get_current(W, P, 0, 13);
+    double J_E1Na2_in = this->get_current(W, P, 13, 12);
+    double J_E1Na_in = this->get_current(W, P, 12, 11);
+    double J_E1_in = this->get_current(W, P, 11, 10);
+    double J_E1K_in = this->get_current(W, P, 10, 9);
+
+    double J_E2PNa3_in = this->get_current(W, P, 2, 3);
+    double J_E2PNa2_in = this->get_current(W, P, 3, 4);
+    double J_E2PNa_in = this->get_current(W, P, 4, 5);
+    double J_E2P_in = this->get_current(W, P, 5, 6);
+    double J_E2PK_in = this->get_current(W, P, 6, 7);
+
+    Idot_y += J_E1Na3_in*log2(P(0)*P_Na2/(P(13)*P_Na3)) /*Sum of X=E1*/\
+           + J_E1Na2_in*log2(P(13)*P_Na/(P(12)*P_Na2)) \
+           + J_E1Na_in*log2(P(12)*P_0/(P(11)*P_Na)) \
+           + J_E1_in*log2(P(11)*P_K/(P(10)*P_0)) \
+           + J_E1K_in*log2(P(10)*P_K2/(P(9)*P_K)) \
+           + J_E2PNa3_in*log2(P(2)*P_Na2/(P(3)*P_Na3)) /*Sum of X=E2P*/\
+           + J_E2PNa2_in*log2(P(3)*P_Na/(P(4)*P_Na2)) \
+           + J_E2PNa_in*log2(P(4)*P_0/(P(5)*P_Na)) \
+           + J_E2P_in*log2(P(5)*P_K/(P(6)*P_0)) \
+           + J_E2PK_in*log2(P(6)*P_K2/(P(7)*P_K));
+
+    return Idot_y;
 }
 #endif // W_MATRIX_H_

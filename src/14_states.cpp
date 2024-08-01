@@ -60,7 +60,9 @@ int main(int argc, char **argv){
 
     // Information of bipartite system
     double I_dot_X = solv.Idot_X(W, eigenvectors.col(i));
-    std::cout << "\nInformation of bipartite system\ndI_X/dt = " << I_dot_X << std::endl;
+    double I_dot_Y = solv.Idot_Y(W, eigenvectors.col(i));
+    std::cout << "\nInformation of bipartite system\ndI_X/dt = " << I_dot_X << std::endl
+              << "dI_Y/dt = " << I_dot_Y << std::endl;
 
     output_file.close();
     return 0;
