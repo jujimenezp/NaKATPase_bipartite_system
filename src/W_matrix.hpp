@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+#include<string>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigenvalues>
 
@@ -106,12 +107,33 @@ class W_matrix : public Eigen::MatrixXd{
 class solver{
     private:
     public:
-        double kB = 1.380649e-23;
-        double e = 1.60217663e-19;
-        Eigen::EigenSolver<Eigen::MatrixXd> solver;
-        void initialize(const Eigen::MatrixXd &W){solver = Eigen::EigenSolver<Eigen::MatrixXd>(W);}
-        Eigen::VectorXd get_eigenvalues(const Eigen::MatrixXd &W){return solver.eigenvalues().real();}
-        Eigen::MatrixXd get_eigenvectors(const Eigen::MatrixXd &W){return solver.eigenvectors().real();}
+        double kB, e; // Boltzmann constant and electron charge
+        std::string E_rate_units;
+        solver(std::string J_or_eV){
+            try{
+                if(J_or_eV == "J"){
+                    kB = 1.380649e-23; // J/K
+                    e = 1.60217663e-19; // C
+                    E_rate_units = " J/s";
+                }
+                else if (J_or_eV == "eV"){
+                    kB = 8.617333262e-5; // eV/K
+                    e = 1; // eV/V
+                    E_rate_units = " eV/s";
+                }
+                else {
+                    throw(9999);
+                }
+            }
+            catch(int error){
+                std::cout << "Invalid energy units provided to solver constructor. Please use \"J\" for Joules or \"eV\" for electronvolts." << std::endl;
+                exit(1);
+            }
+        }
+        Eigen::EigenSolver<Eigen::MatrixXd> eigen_solver;
+        void initialize(const Eigen::MatrixXd &W){eigen_solver = Eigen::EigenSolver<Eigen::MatrixXd>(W);}
+        Eigen::VectorXd get_eigenvalues(const Eigen::MatrixXd &W){return eigen_solver.eigenvalues().real();}
+        Eigen::MatrixXd get_eigenvectors(const Eigen::MatrixXd &W){return eigen_solver.eigenvectors().real();}
 
         // Find index of eigenvalue for the steady state.
         // Does not work correctly if there are many values under the given threshold.
@@ -212,7 +234,9 @@ const{
     work -= J_E1Na3_in * kB * W.T * log(W.c_Na_in);
 
     // Effect of the transmembrane potential
-    work -= J_E1Na3_in * e * W.V;
+    work -= J_E1Na3_in * e * W.V; //Transmembrane potential
+
+
 
     // std::cout << J_E2PNa2_in * kB * W.T * log(W.c_Na_out) << std::endl
     //           << J_E2PNa_in * kB * W.T * log(W.c_Na_out) << std::endl
@@ -241,7 +265,7 @@ double solver::Energy_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
 double solver::System_entropy(const Eigen::VectorXd &v){
     double sum=0;
     for(auto& p: v){
-        sum -= p*log2(p);
+        sum -= kB*p*log(p);
     }
     return sum;
 }
@@ -269,7 +293,7 @@ double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
     W_Na -= J_E1Na_in * kB * W.T * log(W.c_Na_in);
     W_Na -= J_E1Na2_in * kB * W.T * log(W.c_Na_in);
     W_Na -= J_E1Na3_in * kB * W.T * log(W.c_Na_in);
-    W_Na -= 3*J_E1Na3_in*e*W.V;
+    W_Na -= 3*J_E1Na3_in * e * W.V;
 
     //E2P -> E2PK+
     double J_E2PK_in = this->get_current(W, v, 5, 6);
@@ -284,7 +308,7 @@ double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
     W_K -= J_E2PK2_in * kB * W.T * log(W.c_K_out);
     W_K += J_E1K_in * kB * W.T * log(W.c_K_in);
     W_K += J_E1_in * kB * W.T * log(W.c_K_in);
-    W_K += 2*J_E1Na3_in*e*W.V;
+    W_K += 2*J_E1Na3_in * e * W.V;
 
     double J_E1PNa3_in = this->get_current(W, v, 0, 1);
     double J_E2K2_in = this->get_current(W, v, 7, 8);
@@ -352,16 +376,16 @@ double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P){
     double J_E2P_in = this->get_current(W, P, 5, 6);
     double J_E2PK_in = this->get_current(W, P, 6, 7);
 
-    Idot_y += J_E1Na3_in*log2(P(0)*P_Na2/(P(13)*P_Na3)) /*Sum of X=E1*/\
-           + J_E1Na2_in*log2(P(13)*P_Na/(P(12)*P_Na2)) \
-           + J_E1Na_in*log2(P(12)*P_0/(P(11)*P_Na)) \
-           + J_E1_in*log2(P(11)*P_K/(P(10)*P_0)) \
-           + J_E1K_in*log2(P(10)*P_K2/(P(9)*P_K)) \
-           + J_E2PNa3_in*log2(P(2)*P_Na2/(P(3)*P_Na3)) /*Sum of X=E2P*/\
-           + J_E2PNa2_in*log2(P(3)*P_Na/(P(4)*P_Na2)) \
-           + J_E2PNa_in*log2(P(4)*P_0/(P(5)*P_Na)) \
-           + J_E2P_in*log2(P(5)*P_K/(P(6)*P_0)) \
-           + J_E2PK_in*log2(P(6)*P_K2/(P(7)*P_K));
+    Idot_y += J_E1Na3_in * log2(P(0)*P_Na2/(P(13)*P_Na3)) /*Sum of X=E1*/\
+           + J_E1Na2_in * log2(P(13)*P_Na/(P(12)*P_Na2)) \
+           + J_E1Na_in * log2(P(12)*P_0/(P(11)*P_Na)) \
+           + J_E1_in * log2(P(11)*P_K/(P(10)*P_0)) \
+           + J_E1K_in * log2(P(10)*P_K2/(P(9)*P_K)) \
+           + J_E2PNa3_in * log2(P(2)*P_Na2/(P(3)*P_Na3)) /*Sum of X=E2P*/\
+           + J_E2PNa2_in * log2(P(3)*P_Na/(P(4)*P_Na2)) \
+           + J_E2PNa_in * log2(P(4)*P_0/(P(5)*P_Na)) \
+           + J_E2P_in * log2(P(5)*P_K/(P(6)*P_0)) \
+           + J_E2PK_in * log2(P(6)*P_K2/(P(7)*P_K));
 
     return Idot_y;
 }

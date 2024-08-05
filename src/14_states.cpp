@@ -19,7 +19,7 @@ int main(int argc, char **argv){
     W.delete_state(14);
     output_file << W << std::endl;
 
-    solver solv;
+    solver solv("eV"); // "J" for Joules or "eV" for electronvolts
     solv.initialize(W);
     Eigen::VectorXd eigenvalues = solv.get_eigenvalues(W);
     Eigen::MatrixXd eigenvectors = solv.get_eigenvectors(W);
@@ -37,32 +37,32 @@ int main(int argc, char **argv){
     double J_E1PNa3_in = solv.get_current(W, eigenvectors.col(i), 0, 1);
     double J_E1Na2_in = solv.get_current(W, eigenvectors.col(i), 12, 13);
 
-    output_file << "\nCurrent from [E1Na+3] to [E1P(Na+)_3] (main cycle): " << J_E1PNa3_in << std::endl
-                << "Current from [E1Na+] to [E1Na+2] (main cycle): " << J_E1Na2_in << std::endl
-                << "Current from [E2PK+2] to [E2(K+)_2] (main cycle): " << J_E2K2_in << std::endl
-                << "Current from [E2(K+)_2] to [E1K+2] (main cycle): " << J_E2K2_out << std::endl;
+    output_file << "\nCurrent from [E1Na+3] to [E1P(Na+)_3] (main cycle): " << J_E1PNa3_in << " 1/s" << std::endl
+                << "Current from [E1Na+] to [E1Na+2] (main cycle): " << J_E1Na2_in << " 1/s" << std::endl
+                << "Current from [E2PK+2] to [E2(K+)_2] (main cycle): " << J_E2K2_in << " 1/s" << std::endl
+                << "Current from [E2(K+)_2] to [E1K+2] (main cycle): " << J_E2K2_out << " 1/s" << std::endl;
 
     // Work done in the 3Na-2K path
     double work_3Na_2K = solv.Work_3Na_2K(W, eigenvectors.col(i));
-    output_file << "\nWork rate in the 3Na_2K path: " << work_3Na_2K << std::endl;
+    output_file << "\nWork rate in the 3Na_2K path: " << work_3Na_2K << solv.E_rate_units << std::endl;
     double energy_3Na_2K = solv.Energy_3Na_2K(W, eigenvectors.col(i));
     double Q = -energy_3Na_2K-work_3Na_2K;
-    output_file << "Energy rate by ATP hydrolysis: " << energy_3Na_2K << std::endl
-                << "Heat rate through the 3Na_2K path:" << Q << std::endl;
+    output_file << "Energy rate by ATP hydrolysis: " << energy_3Na_2K << solv.E_rate_units << std::endl
+                << "Heat rate through the 3Na_2K path: " << Q << solv.E_rate_units << std::endl;
     double entropy_sys_3Na_2K = solv.System_entropy(eigenvectors.col(i));
+    output_file << "Environment entropy rate: " << -Q/W.T << std::endl;
     output_file << "System entropy in the steady state: " << entropy_sys_3Na_2K << std::endl;
-    output_file << "Environment entropy: " << -(Q/W.T)/(solv.kB*log(2)) << std::endl;
 
      // Efficiency
     double eff;
     eff = solv.Efficiency_3Na_2K(W, eigenvectors.col(i));
-    std::cout << "\nEfficiency: " << eff << std::endl;
+    output_file << "\nEfficiency: " << eff << std::endl;
 
     // Information of bipartite system
     double I_dot_X = solv.Idot_X(W, eigenvectors.col(i));
     double I_dot_Y = solv.Idot_Y(W, eigenvectors.col(i));
-    std::cout << "\nInformation of bipartite system\ndI_X/dt = " << I_dot_X << std::endl
-              << "dI_Y/dt = " << I_dot_Y << std::endl;
+    output_file << "\nInformation of bipartite system\ndI_X/dt = " << I_dot_X/J_E1PNa3_in << " bits/cycle" << std::endl
+              << "dI_Y/dt = " << I_dot_Y/J_E1PNa3_in << " bits/cycle" << std::endl;
 
     output_file.close();
     return 0;
