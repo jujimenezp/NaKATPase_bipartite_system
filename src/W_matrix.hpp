@@ -14,7 +14,7 @@
 class W_matrix : public Eigen::MatrixXd{
     private:
     public:
-        //Parameteres
+        //Parameters
         double T,V,F,R;
         double FVoRT;
 
@@ -61,7 +61,6 @@ class W_matrix : public Eigen::MatrixXd{
             c_Na_out=c_Na_outi; c_Na_in=c_Na_ini; c_K_out=c_K_outi; c_K_in=c_K_ini;
             c_ATP=c_ATPi; c_ADP=c_ADPi, c_P=c_Pi, K_h=K_hi;
 
-            //W = Eigen::MatrixXd::Zero(19,19);
             (*this).setZero();
 
             (*this)(0,0) = -(k_1+ki_dN1); (*this)(0,13) = ki_bN1*c_Na_in;
@@ -83,6 +82,13 @@ class W_matrix : public Eigen::MatrixXd{
             (*this)(16,12) = ki_bk*c_K_in; (*this)(16,16) = -ki_dK;
             (*this)(17,6) = ko_bN*c_Na_out; (*this)(17,17) = -ko_dN;
             (*this)(18,10) = ki_bN*c_Na_in; (*this)(18,18) = -ki_dN;
+
+            // Additional transition rates to ensure thermodynamic consistency
+            double E_r = std::sqrt(c_ADP*c_P/(c_ATP*K_h));
+            double k_1r = k_1*E_r, k_32r = k_32*E_r;
+            std::cout << "\nk_1r = " << k_1r << "\nk_32r = " << k_32r << std::endl;
+            (*this)(0,1) = k_1r; (*this)(1,1) -= k_1r;
+            (*this)(7,8) = k_32r; (*this)(8,8) -= k_32r;
         }
 
         // Delete row and column corresponding to state index and also
@@ -126,7 +132,7 @@ class solver{
                 }
             }
             catch(int error){
-                std::cout << "Invalid energy units provided to solver constructor. Please use \"J\" for Joules or \"eV\" for electronvolts." << std::endl;
+                std::cerr << "Invalid energy units provided to solver constructor. Please use \"J\" for Joules or \"eV\" for electronvolts." << std::endl;
                 exit(1);
             }
         }
@@ -161,15 +167,20 @@ class solver{
         // Energy available through ATP hydrolysis
         double Energy_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v);
 
+
         // Entropy of the system and the environment
         double System_entropy(const Eigen::VectorXd &v);
 
         // Eficiency of the transport through the 3Na_2K path
         double Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v);
 
+        // Heat rate in bipartite system according to Ehrich and Sivak (2023)
+        double Qdot_X(const W_matrix &W, const Eigen::VectorXd &P);
+        double Qdot_Y(const W_matrix &W, const Eigen::VectorXd &P);
+
         // Information flow in bipartite system
-        double Idot_X(const W_matrix &W, const Eigen::VectorXd &v);
-        double Idot_Y(const W_matrix &W, const Eigen::VectorXd &v);
+        double Idot_X(const W_matrix &W, const Eigen::VectorXd &P);
+        double Idot_Y(const W_matrix &W, const Eigen::VectorXd &P);
 };
 
 int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
@@ -180,7 +191,7 @@ int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
         throw (9999);
     }
     catch(int error){
-        std::cout << "No eigenvalue found with absolute value under " << threshold << std::endl;
+        std::cerr << "No eigenvalue found with absolute value under " << threshold << std::endl;
         exit(1);
     }
 }
@@ -389,4 +400,44 @@ double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P){
 
     return Idot_y;
 }
+
+double solver::Qdot_X(const W_matrix &W, const Eigen::VectorXd &P){
+    double Qdot_x=0;
+    
+    //Currents that are not 0
+    double J_01 = this->get_current(W, P, 0, 1);
+    double J_21 = this->get_current(W, P, 2, 1);
+    double J_78 = this->get_current(W, P, 7, 8);
+    double J_98 = this->get_current(W, P, 9, 8);
+
+    Qdot_x = J_01*log(W(0,1)/W(1,0)) + J_21*log(W(2,1)/W(1,2)) + J_78*log(W(7,8)/W(8,7)) + J_98*log(W(9,8)/W(8,9));
+    Qdot_x *= -kB*W.T;
+    return Qdot_x;
+}
+
+double solver::Qdot_Y(const W_matrix &W, const Eigen::VectorXd &P){
+    double Qdot_y=0;
+
+    // Currents
+    double J_E1Na3_in = this->get_current(W, P, 0, 13);
+    double J_E1Na2_in = this->get_current(W, P, 13, 12);
+    double J_E1Na_in = this->get_current(W, P, 12, 11);
+    double J_E1_in = this->get_current(W, P, 11, 10);
+    double J_E1K_in = this->get_current(W, P, 10, 9);
+
+    double J_E2PNa3_in = this->get_current(W, P, 2, 3);
+    double J_E2PNa2_in = this->get_current(W, P, 3, 4);
+    double J_E2PNa_in = this->get_current(W, P, 4, 5);
+    double J_E2P_in = this->get_current(W, P, 5, 6);
+    double J_E2PK_in = this->get_current(W, P, 6, 7);
+
+    Qdot_y += J_E1Na3_in*log(W(0,13)/W(13,0)) + J_E1Na2_in*log(W(13,12)/W(12,13)) + J_E1Na_in*log(W(12,11)/W(11,12)) \
+           + J_E1_in*log(W(11,10)/W(10,11)) + J_E1K_in*log(W(10,9)/W(9,10));
+    Qdot_y += J_E2PNa3_in*log(W(2,3)/W(3,2)) + J_E2PNa2_in*log(W(3,4)/W(4,3)) + J_E2PNa_in*log(W(4,5)/W(5,4)) \
+           + J_E2P_in*log(W(5,6)/W(6,5)) + J_E2PK_in*log(W(6,7)/W(7,6));
+    Qdot_y *= -kB*W.T;
+    return Qdot_y;
+}
+
+
 #endif // W_MATRIX_H_

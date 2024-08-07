@@ -49,8 +49,13 @@ int main(int argc, char **argv){
     double Q = -energy_3Na_2K-work_3Na_2K;
     output_file << "Energy rate by ATP hydrolysis: " << energy_3Na_2K << solv.E_rate_units << std::endl
                 << "Heat rate through the 3Na_2K path: " << Q << solv.E_rate_units << std::endl;
+    double Qdot_x = solv.Qdot_X(W, eigenvectors.col(i));
+    double Qdot_y = solv.Qdot_Y(W, eigenvectors.col(i));
+    output_file << "\nHeat rate calculated according to Ehrich and Sivak (2023):" << std::endl
+                << "Qdot_x = " << Qdot_x << solv.E_rate_units << std::endl
+                << "Qdot_y = " << Qdot_y << solv.E_rate_units << std::endl;
     double entropy_sys_3Na_2K = solv.System_entropy(eigenvectors.col(i));
-    output_file << "Environment entropy rate: " << -Q/W.T << std::endl;
+    output_file << "\nEnvironment entropy rate: " << -Q/W.T << std::endl;
     output_file << "System entropy in the steady state: " << entropy_sys_3Na_2K << std::endl;
 
      // Efficiency
