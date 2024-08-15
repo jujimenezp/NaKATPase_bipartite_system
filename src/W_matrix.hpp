@@ -17,6 +17,8 @@ class W_matrix : public Eigen::MatrixXd{
         //Parameters
         double T,V,F,R;
         double FVoRT;
+        double kB, e; // Boltzmann constant and electron charge
+        std::string E_rate_units;
 
         // Initial transition rates
         double k_1, k_2fv0, k_2rv0, ko_dN1v0, ko_bN1v0, \
@@ -37,7 +39,7 @@ class W_matrix : public Eigen::MatrixXd{
                  double  ki_bN1v0i, double ki_dNi, double  ki_bNi, double  ki_dKi, double  ki_bki, \
                  double Ti, double Vi, double Fi, double Ri,            \
                  double c_Na_outi, double c_Na_ini, double c_K_outi, double c_K_ini, \
-                 double c_ATPi, double c_ADPi, double c_Pi, double K_hi) : Eigen::MatrixXd(19,19)
+                 double c_ATPi, double c_ADPi, double c_Pi, double K_hi, std::string J_or_eV) : Eigen::MatrixXd(19,19)
         {
             T=Ti; V=Vi; F=Fi; R=Ri;
             k_1=k_1i; k_2fv0=k_2fv0i; k_2rv0=k_2rv0i; ko_dN1v0=ko_dN1v0i; ko_bN1v0=ko_bN1v0i;
@@ -60,6 +62,26 @@ class W_matrix : public Eigen::MatrixXd{
 
             c_Na_out=c_Na_outi; c_Na_in=c_Na_ini; c_K_out=c_K_outi; c_K_in=c_K_ini;
             c_ATP=c_ATPi; c_ADP=c_ADPi, c_P=c_Pi, K_h=K_hi;
+
+             try{
+                if(J_or_eV == "J"){
+                    kB = 1.380649e-23; // J/K
+                    e = 1.60217663e-19; // C
+                    E_rate_units = " J/s";
+                }
+                else if (J_or_eV == "eV"){
+                    kB = 8.617333262e-5; // eV/K
+                    e = 1; // eV/V
+                    E_rate_units = " eV/s";
+                }
+                else {
+                    throw(9999);
+                }
+            }
+            catch(int error){
+                std::cerr << "Invalid energy units provided to solver constructor. Please use \"J\" for Joules or \"eV\" for electronvolts." << std::endl;
+                exit(1);
+            }
 
             (*this).setZero();
 
@@ -84,11 +106,21 @@ class W_matrix : public Eigen::MatrixXd{
             (*this)(18,10) = ki_bN*c_Na_in; (*this)(18,18) = -ki_dN;
 
             // Additional transition rates to ensure thermodynamic consistency
-            double E_r = std::sqrt(c_ADP*c_P/(c_ATP*K_h));
-            double k_1r = k_1*E_r, k_32r = k_32*E_r;
-            std::cout << "\nk_1r = " << k_1r << "\nk_32r = " << k_32r << std::endl;
-            (*this)(0,1) = k_1r; (*this)(1,1) -= k_1r;
-            (*this)(7,8) = k_32r; (*this)(8,8) -= k_32r;
+            double w10w78=1; double prop_w10_to_w78 = 1;
+
+            for(int i=0; i<13; i++){
+                w10w78 *= (*this)(i+1,i);
+                if(i!=0 && i!=7){
+                    w10w78 *= 1/(*this)(i,i+1);
+                }
+            }
+            w10w78 *= (*this)(0,13)/(*this)(13,0);
+            std::cout << "Prod k_ij/Prod k_ji = " << w10w78 << std::endl;
+            w10w78 *= c_ADP*c_P/(c_ATP*K_h)*std::pow(c_Na_out/c_Na_in,3)*std::pow(c_K_in/c_K_out,2)*std::exp(-e*V/(kB*T));
+            std::cout << "W_10*W_78 = " << w10w78 << std::endl;
+
+            (*this)(0,1) = prop_w10_to_w78*std::sqrt(w10w78); (*this)(1,1) -= prop_w10_to_w78*std::sqrt(w10w78);
+            (*this)(7,8) = std::sqrt(w10w78)/prop_w10_to_w78; (*this)(8,8) -= std::sqrt(w10w78)/prop_w10_to_w78;
         }
 
         // Delete row and column corresponding to state index and also
@@ -113,28 +145,9 @@ class W_matrix : public Eigen::MatrixXd{
 class solver{
     private:
     public:
-        double kB, e; // Boltzmann constant and electron charge
-        std::string E_rate_units;
-        solver(std::string J_or_eV){
-            try{
-                if(J_or_eV == "J"){
-                    kB = 1.380649e-23; // J/K
-                    e = 1.60217663e-19; // C
-                    E_rate_units = " J/s";
-                }
-                else if (J_or_eV == "eV"){
-                    kB = 8.617333262e-5; // eV/K
-                    e = 1; // eV/V
-                    E_rate_units = " eV/s";
-                }
-                else {
-                    throw(9999);
-                }
-            }
-            catch(int error){
-                std::cerr << "Invalid energy units provided to solver constructor. Please use \"J\" for Joules or \"eV\" for electronvolts." << std::endl;
-                exit(1);
-            }
+        Eigen::MatrixXd J;
+        solver(int J_size){
+            J = Eigen::MatrixXd::Zero(J_size,J_size);
         }
         Eigen::EigenSolver<Eigen::MatrixXd> eigen_solver;
         void initialize(const Eigen::MatrixXd &W){eigen_solver = Eigen::EigenSolver<Eigen::MatrixXd>(W);}
@@ -159,28 +172,35 @@ class solver{
         }
 
         // Calculate current J_ji going from state i to state j.
-        double get_current(const Eigen::MatrixXd &W, const Eigen::VectorXd &v, int i, int j) const;
+        double get_current(const Eigen::MatrixXd &, const Eigen::VectorXd &, int , int ) const;
+        void get_main_cycle_currents(const Eigen::MatrixXd &, const Eigen::VectorXd &);
 
-        // Work done in the 3Na_2K cycle
-        double Work_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v) const;
+        // Work rate  in the 3Na_2K cycle
+        double Work_3Na_2K(const W_matrix &, const Eigen::VectorXd &) const;
 
         // Energy available through ATP hydrolysis
-        double Energy_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v);
+        double Energy_3Na_2K(const W_matrix &, const Eigen::VectorXd &) const;
 
+        // Heat rate in the main cycle
+        double Qdot(const W_matrix&, const Eigen::VectorXd&) const;
 
         // Entropy of the system and the environment
-        double System_entropy(const Eigen::VectorXd &v);
+        double System_entropy(const W_matrix&, const Eigen::VectorXd &) const;
 
         // Eficiency of the transport through the 3Na_2K path
-        double Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v);
+        double Efficiency_3Na_2K(const W_matrix &, const Eigen::VectorXd &) const;
 
         // Heat rate in bipartite system according to Ehrich and Sivak (2023)
-        double Qdot_X(const W_matrix &W, const Eigen::VectorXd &P);
-        double Qdot_Y(const W_matrix &W, const Eigen::VectorXd &P);
+        double Qdot_X(const W_matrix &, const Eigen::VectorXd &) const;
+        double Qdot_Y(const W_matrix &, const Eigen::VectorXd &) const;
+
+        // Work rate in bipartite system according to Ehrich and Sivak (2023)
+        double Wdot_X(const W_matrix &, const Eigen::VectorXd &) const;
+        double Wdot_Y(const W_matrix &, const Eigen::VectorXd &) const;
 
         // Information flow in bipartite system
-        double Idot_X(const W_matrix &W, const Eigen::VectorXd &P);
-        double Idot_Y(const W_matrix &W, const Eigen::VectorXd &P);
+        double Idot_X(const W_matrix &, const Eigen::VectorXd &) const;
+        double Idot_Y(const W_matrix &, const Eigen::VectorXd &) const;
 };
 
 int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
@@ -198,134 +218,113 @@ int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
 
 double solver::get_current(const Eigen::MatrixXd &W, const Eigen::VectorXd &v, int i, int j)
 const{
-    return W(j,i)*v[i]-W(i,j)*v[j];
+    return W(i,j)*v[j]-W(j,i)*v[i];
+}
+
+void solver::get_main_cycle_currents(const Eigen::MatrixXd &W, const Eigen::VectorXd &v){
+    for (int i=0; i < 13; i++) {
+        J(i+1,i) = W(i+1,i)*v(i) - W(i,i+1)*v(i+1);
+        J(i,i+1) = -J(i+1,i);
+    }
+    J(13,0) = W(13,0)*v(0) - W(0,13)*v(13);
+    J(0,13) = -J(13,0);
 }
 
 double solver::Work_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v)
 const{
     double work=0;
     //E2PNa+3 -> E2PNa+2
-    double J_E2PNa2_in = this->get_current(W, v, 2,3);
-    work += J_E2PNa2_in * kB * W.T * log(W.c_Na_out);
+    work += J(3,2) * log(W.c_Na_out);
 
     //E2PNa+2 -> E2PNa+
-    double J_E2PNa_in = this->get_current(W, v, 3, 4);
-    work += J_E2PNa_in * kB * W.T * log(W.c_Na_out);
+    work += J(4,3) * log(W.c_Na_out);
 
     //E2PNa+ -> E2P
-    double J_E2P_in = this->get_current(W, v, 4, 5);
-    work += J_E2P_in * kB * W.T * log(W.c_Na_out);
+    work += J(5,4) * log(W.c_Na_out);
 
     //E2P -> E2PK+
-    double J_E2PK_in = this->get_current(W, v, 5, 6);
-    work -= J_E2PK_in * kB * W.T * log(W.c_K_out);
+    work -= J(6,5) * log(W.c_K_out);
 
     //E2PK+ -> E2PK+2
-    double J_E2PK2_in = this->get_current(W, v, 6, 7);
-    work -= J_E2PK2_in * kB * W.T * log(W.c_K_out);
+    work -= J(7,6) * log(W.c_K_out);
 
     //E1K+2 -> E1K+
-    double J_E1K_in = this->get_current(W, v, 9, 10);
-    work += J_E1K_in * kB * W.T * log(W.c_K_in);
+    work += J(10,9) * log(W.c_K_in);
 
     //E1K+ -> E1
-    double J_E1_in = this->get_current(W, v, 10, 11);
-    work += J_E1_in * kB * W.T * log(W.c_K_in);
+    work += J(11,10) * log(W.c_K_in);
 
     //E1 -> E1Na+
-    double J_E1Na_in = this->get_current(W, v, 11, 12);
-    work -= J_E1Na_in * kB * W.T * log(W.c_Na_in);
+    work -= J(12,11) * log(W.c_Na_in);
 
     //E1Na+ -> E1Na+2
-    double J_E1Na2_in = this->get_current(W, v, 12, 13);
-    work -= J_E1Na2_in * kB * W.T * log(W.c_Na_in);
+    work -= J(13,12) * log(W.c_Na_in);
 
     //E1Na+2 -> E1Na+3
-    double J_E1Na3_in = this->get_current(W, v, 13, 0);
-    work -= J_E1Na3_in * kB * W.T * log(W.c_Na_in);
+    work -= J(0,13) * log(W.c_Na_in);
+
+    work *= W.kB*W.T;
 
     // Effect of the transmembrane potential
-    work -= J_E1Na3_in * e * W.V; //Transmembrane potential
-
-
-
-    // std::cout << J_E2PNa2_in * kB * W.T * log(W.c_Na_out) << std::endl
-    //           << J_E2PNa_in * kB * W.T * log(W.c_Na_out) << std::endl
-    //           << J_E2P_in * kB * W.T * log(W.c_Na_out) << std::endl
-    //           << -J_E2PK_in * kB * W.T * log(W.c_K_out) << std::endl
-    //           << -J_E2PK2_in * kB * W.T * log(W.c_K_out) << std::endl
-    //           << J_E1K_in * kB * W.T * log(W.c_K_in) << std::endl
-    //           << J_E1_in * kB * W.T * log(W.c_K_in) << std::endl
-    //           << -J_E1Na_in * kB * W.T * log(W.c_Na_in) << std::endl
-    //           << -J_E1Na2_in * kB * W.T * log(W.c_Na_in) << std::endl
-    //           << -J_E1Na3_in * kB * W.T * log(W.c_Na_in) << std::endl
-    //           << -J_E1Na3_in * e * W.V << std::endl;
+    work -= J(0,13) * W.e * W.V; //Transmembrane potential
 
     return work;
 }
 
-double solver::Energy_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
+double solver::Energy_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v) const{
     double G = 0;
-    double J_E1PNa3_in = this->get_current(W, v, 0, 1);
-    G += J_E1PNa3_in * kB * W.T * log(W.c_ADP/(W.c_ATP*W.K_h));
-    double J_E2K2_in = this->get_current(W, v, 7, 8);
-    G += J_E2K2_in * kB * W.T * log(W.c_P);
+    G += J(1,0) * log(W.c_ADP/(W.c_ATP*W.K_h));
+    G += J(8,7) * log(W.c_P);
+    G *= W.kB*W.T;
+    
     return G;
 }
 
-double solver::System_entropy(const Eigen::VectorXd &v){
+double solver::Qdot(const W_matrix &W, const Eigen::VectorXd &P) const{
+    double result=1;
+
+    for (int i=0; i < 13; i++){
+        result *= W(i+1,i)/W(i,i+1);
+    }
+
+    result *= W(0,13)/W(13,0);
+    result = -W.kB*W.T*J(1,0)*std::log(result);
+
+    return result;
+}
+
+double solver::System_entropy(const W_matrix &W, const Eigen::VectorXd &v) const{
     double sum=0;
     for(auto& p: v){
-        sum -= kB*p*log(p);
+        sum -= W.kB*p*log(p);
     }
     return sum;
 }
 
 
-double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
+double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v) const{
 
     double W_Na=0, W_K=0, W_ATP=0;
-    //E2PNa+3 -> E2PNa+2
-    double J_E2PNa2_in = this->get_current(W, v, 2,3);
-    //E2PNa+2 -> E2PNa+
-    double J_E2PNa_in = this->get_current(W, v, 3, 4);
-    //E2PNa+ -> E2P
-    double J_E2P_in = this->get_current(W, v, 4, 5);
-    //E1 -> E1Na+
-    double J_E1Na_in = this->get_current(W, v, 11, 12);
-    //E1Na+ -> E1Na+2
-    double J_E1Na2_in = this->get_current(W, v, 12, 13);
-    //E1Na+2 -> E1Na+3
-    double J_E1Na3_in = this->get_current(W, v, 13, 0);
 
-    W_Na += J_E2PNa2_in * kB * W.T * log(W.c_Na_out);
-    W_Na += J_E2PNa_in * kB * W.T * log(W.c_Na_out);
-    W_Na += J_E2P_in * kB * W.T * log(W.c_Na_out);
-    W_Na -= J_E1Na_in * kB * W.T * log(W.c_Na_in);
-    W_Na -= J_E1Na2_in * kB * W.T * log(W.c_Na_in);
-    W_Na -= J_E1Na3_in * kB * W.T * log(W.c_Na_in);
-    W_Na -= 3*J_E1Na3_in * e * W.V;
+    W_Na += J(3,2) * log(W.c_Na_out);
+    W_Na += J(4,3) * log(W.c_Na_out);
+    W_Na += J(5,4) * log(W.c_Na_out);
+    W_Na -= J(12,11) * log(W.c_Na_in);
+    W_Na -= J(13,12) * log(W.c_Na_in);
+    W_Na -= J(0,13) * log(W.c_Na_in);
+    W_Na *= W.kB*W.T;
+    W_Na -= 3*J(0,13) * W.e * W.V;
 
-    //E2P -> E2PK+
-    double J_E2PK_in = this->get_current(W, v, 5, 6);
-    //E2PK+ -> E2PK+2
-    double J_E2PK2_in = this->get_current(W, v, 6, 7);
-    //E1K+2 -> E1K+
-    double J_E1K_in = this->get_current(W, v, 9, 10);
-    //E1K+ -> E1
-    double J_E1_in = this->get_current(W, v, 10, 11);
+    W_K -= J(6,5) * log(W.c_K_out);
+    W_K -= J(7,6) * log(W.c_K_out);
+    W_K += J(10,9) * log(W.c_K_in);
+    W_K += J(11,10) * log(W.c_K_in);
+    W_K *= W.kB*W.T;
+    W_K += 2*J(0,13) * W.e * W.V;
 
-    W_K -= J_E2PK_in * kB * W.T * log(W.c_K_out);
-    W_K -= J_E2PK2_in * kB * W.T * log(W.c_K_out);
-    W_K += J_E1K_in * kB * W.T * log(W.c_K_in);
-    W_K += J_E1_in * kB * W.T * log(W.c_K_in);
-    W_K += 2*J_E1Na3_in * e * W.V;
-
-    double J_E1PNa3_in = this->get_current(W, v, 0, 1);
-    double J_E2K2_in = this->get_current(W, v, 7, 8);
-
-    W_ATP += J_E1PNa3_in * kB * W.T * log(W.c_ADP/(W.c_ATP*W.K_h));
-    W_ATP += J_E2K2_in * kB * W.T * log(W.c_P);
+    W_ATP += J(1,0) * log(W.c_ADP/(W.c_ATP*W.K_h));
+    W_ATP += J(8,7) * log(W.c_P);
+    W_ATP *= W.kB*W.T;
 
     std::cout << "\nW_ATP: " << W_ATP << std::endl
               << "W_Na: " << W_Na << std::endl
@@ -336,7 +335,7 @@ double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v){
 
 }
 
-double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P){
+double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Idot_x = 0;
     // The marginal probabilities of being on E1 or E2P
     double P_E1=0,P_E2P=0;
@@ -348,21 +347,15 @@ double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P){
               << "P(E1) = " << P_E1 << std::endl
               << "P(E2P) = " << P_E2P << std::endl;
 
-    //Currents that are not 0
-    double J_01 = this->get_current(W, P, 0, 1);
-    double J_21 = this->get_current(W, P, 2, 1);
-    double J_78 = this->get_current(W, P, 7, 8);
-    double J_98 = this->get_current(W, P, 9, 8);
-
-    Idot_x += J_01*log2(P(0)/P_E1) \
-           + J_21*log2(P(2)/P_E2P) \
-           + J_78*log2(P(7)/P_E2P) \
-           + J_98*log2(P(9)/P_E1);
+    Idot_x += J(0,1)*log2(P(0)/P_E1) \
+           + J(2,1)*log2(P(2)/P_E2P) \
+           + J(7,8)*log2(P(7)/P_E2P) \
+           + J(9,8)*log2(P(9)/P_E1);
 
     return Idot_x;
 }
 
-double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P){
+double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Idot_y = 0;
 
     // Marginal probabilities
@@ -374,70 +367,55 @@ double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P){
     P_K = P(10) + P(6);
     P_K2 = P(9) + P(8) + P(7);
 
-    // Currents
-    double J_E1Na3_in = this->get_current(W, P, 0, 13);
-    double J_E1Na2_in = this->get_current(W, P, 13, 12);
-    double J_E1Na_in = this->get_current(W, P, 12, 11);
-    double J_E1_in = this->get_current(W, P, 11, 10);
-    double J_E1K_in = this->get_current(W, P, 10, 9);
-
-    double J_E2PNa3_in = this->get_current(W, P, 2, 3);
-    double J_E2PNa2_in = this->get_current(W, P, 3, 4);
-    double J_E2PNa_in = this->get_current(W, P, 4, 5);
-    double J_E2P_in = this->get_current(W, P, 5, 6);
-    double J_E2PK_in = this->get_current(W, P, 6, 7);
-
-    Idot_y += J_E1Na3_in * log2(P(0)*P_Na2/(P(13)*P_Na3)) /*Sum of X=E1*/\
-           + J_E1Na2_in * log2(P(13)*P_Na/(P(12)*P_Na2)) \
-           + J_E1Na_in * log2(P(12)*P_0/(P(11)*P_Na)) \
-           + J_E1_in * log2(P(11)*P_K/(P(10)*P_0)) \
-           + J_E1K_in * log2(P(10)*P_K2/(P(9)*P_K)) \
-           + J_E2PNa3_in * log2(P(2)*P_Na2/(P(3)*P_Na3)) /*Sum of X=E2P*/\
-           + J_E2PNa2_in * log2(P(3)*P_Na/(P(4)*P_Na2)) \
-           + J_E2PNa_in * log2(P(4)*P_0/(P(5)*P_Na)) \
-           + J_E2P_in * log2(P(5)*P_K/(P(6)*P_0)) \
-           + J_E2PK_in * log2(P(6)*P_K2/(P(7)*P_K));
+    Idot_y += J(0,13) * log2(P(0)*P_Na2/(P(13)*P_Na3)) /*Sum of X=E1*/\
+           + J(13,12) * log2(P(13)*P_Na/(P(12)*P_Na2)) \
+           + J(12,11) * log2(P(12)*P_0/(P(11)*P_Na)) \
+           + J(11,10) * log2(P(11)*P_K/(P(10)*P_0)) \
+           + J(10,9) * log2(P(10)*P_K2/(P(9)*P_K)) \
+           + J(2,3) * log2(P(2)*P_Na2/(P(3)*P_Na3)) /*Sum of X=E2P*/\
+           + J(3,4) * log2(P(3)*P_Na/(P(4)*P_Na2)) \
+           + J(4,5) * log2(P(4)*P_0/(P(5)*P_Na)) \
+           + J(5,6) * log2(P(5)*P_K/(P(6)*P_0)) \
+           + J(6,7) * log2(P(6)*P_K2/(P(7)*P_K));
 
     return Idot_y;
 }
 
-double solver::Qdot_X(const W_matrix &W, const Eigen::VectorXd &P){
+double solver::Qdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Qdot_x=0;
-    
-    //Currents that are not 0
-    double J_01 = this->get_current(W, P, 0, 1);
-    double J_21 = this->get_current(W, P, 2, 1);
-    double J_78 = this->get_current(W, P, 7, 8);
-    double J_98 = this->get_current(W, P, 9, 8);
 
-    Qdot_x = J_01*log(W(0,1)/W(1,0)) + J_21*log(W(2,1)/W(1,2)) + J_78*log(W(7,8)/W(8,7)) + J_98*log(W(9,8)/W(8,9));
-    Qdot_x *= -kB*W.T;
+    Qdot_x = J(0,1)*log(W(0,1)/W(1,0)) + J(2,1)*log(W(2,1)/W(1,2)) + J(7,8)*log(W(7,8)/W(8,7)) + J(9,8)*log(W(9,8)/W(8,9));
+    Qdot_x *= -W.kB*W.T;
     return Qdot_x;
 }
 
-double solver::Qdot_Y(const W_matrix &W, const Eigen::VectorXd &P){
+double solver::Qdot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Qdot_y=0;
 
-    // Currents
-    double J_E1Na3_in = this->get_current(W, P, 0, 13);
-    double J_E1Na2_in = this->get_current(W, P, 13, 12);
-    double J_E1Na_in = this->get_current(W, P, 12, 11);
-    double J_E1_in = this->get_current(W, P, 11, 10);
-    double J_E1K_in = this->get_current(W, P, 10, 9);
-
-    double J_E2PNa3_in = this->get_current(W, P, 2, 3);
-    double J_E2PNa2_in = this->get_current(W, P, 3, 4);
-    double J_E2PNa_in = this->get_current(W, P, 4, 5);
-    double J_E2P_in = this->get_current(W, P, 5, 6);
-    double J_E2PK_in = this->get_current(W, P, 6, 7);
-
-    Qdot_y += J_E1Na3_in*log(W(0,13)/W(13,0)) + J_E1Na2_in*log(W(13,12)/W(12,13)) + J_E1Na_in*log(W(12,11)/W(11,12)) \
-           + J_E1_in*log(W(11,10)/W(10,11)) + J_E1K_in*log(W(10,9)/W(9,10));
-    Qdot_y += J_E2PNa3_in*log(W(2,3)/W(3,2)) + J_E2PNa2_in*log(W(3,4)/W(4,3)) + J_E2PNa_in*log(W(4,5)/W(5,4)) \
-           + J_E2P_in*log(W(5,6)/W(6,5)) + J_E2PK_in*log(W(6,7)/W(7,6));
-    Qdot_y *= -kB*W.T;
+    Qdot_y += J(0,13)*log(W(0,13)/W(13,0)) + J(13,12)*log(W(13,12)/W(12,13)) + J(12,11)*log(W(12,11)/W(11,12)) \
+           + J(11,10)*log(W(11,10)/W(10,11)) + J(10,9)*log(W(10,9)/W(9,10));
+    Qdot_y += J(2,3)*log(W(2,3)/W(3,2)) + J(3,4)*log(W(3,4)/W(4,3)) + J(4,5)*log(W(4,5)/W(5,4)) \
+           + J(5,6)*log(W(5,6)/W(6,5)) + J(6,7)*log(W(6,7)/W(7,6));
+    Qdot_y *= -W.kB*W.T;
     return Qdot_y;
 }
 
+double solver::Wdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
+    double U_ATP = W.kB*W.T*log(W.c_ADP*W.c_P/(W.c_ATP*W.K_h))/2.;
+
+    double Wdot_x = -J(1,0)*U_ATP - J(8,7)*U_ATP;
+    return Wdot_x;
+}
+double solver::Wdot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
+    double U_Na1 = W.kB*W.T*log(W.c_Na_out) - W.e*W.V/2.;
+    double U_Na2 = -W.kB*W.T*log(W.c_Na_in) - W.e*W.V/2.;
+    double U_K1 = -W.kB*W.T*log(W.c_K_out) + W.e*W.V/2.;
+    double U_K2 = W.kB*W.T*log(W.c_K_in) + W.e*W.V/2.;
+
+    double Wdot_y = -U_Na1*(J(3,2)+J(4,3)+J(5,4)) - U_Na2*(J(12,11)+J(13,12)+J(0,13)) \
+             -U_K1*(J(6,5)+J(7,6)) - U_K2*(J(10,9)+J(11,10));
+
+    return Wdot_y;
+}
 
 #endif // W_MATRIX_H_
