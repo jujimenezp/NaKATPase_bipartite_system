@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Program to read transition rates and pass them to main program
+# Script to read transition rates and pass them to main program
 from pandas import read_csv
 import subprocess
 

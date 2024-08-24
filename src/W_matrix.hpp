@@ -1,4 +1,4 @@
-// Store the W matrix coefficients for multiple use
+// Store the transition matrix W and define functions to calculate thermodynamic quantitites
 #pragma once
 
 #include <iomanip>
@@ -11,6 +11,7 @@
 #ifndef W_MATRIX_H_
 #define W_MATRIX_H_
 
+// Cass that stores the transition matrix
 class W_matrix : public Eigen::MatrixXd{
     private:
     public:
@@ -63,6 +64,7 @@ class W_matrix : public Eigen::MatrixXd{
             c_Na_out=c_Na_outi; c_Na_in=c_Na_ini; c_K_out=c_K_outi; c_K_in=c_K_ini;
             c_ATP=c_ATPi; c_ADP=c_ADPi, c_P=c_Pi, K_h=K_hi;
 
+            // Define if the results are in J or eV
              try{
                 if(J_or_eV == "J"){
                     kB = 1.380649e-23; // J/K
@@ -83,6 +85,7 @@ class W_matrix : public Eigen::MatrixXd{
                 exit(1);
             }
 
+             // construccion of the W matrix
             (*this).setZero();
 
             (*this)(0,0) = -(k_1+ki_dN1); (*this)(0,13) = ki_bN1*c_Na_in;
@@ -115,9 +118,7 @@ class W_matrix : public Eigen::MatrixXd{
                 }
             }
             w10w78 *= (*this)(0,13)/(*this)(13,0);
-            std::cout << "Prod k_ij/Prod k_ji = " << w10w78 << std::endl;
             w10w78 *= c_ADP*c_P/(c_ATP*K_h)*std::pow(c_Na_out/c_Na_in,3)*std::pow(c_K_in/c_K_out,2)*std::exp(-e*V/(kB*T));
-            std::cout << "W_10*W_78 = " << w10w78 << std::endl;
 
             (*this)(0,1) = prop_w10_to_w78*std::sqrt(w10w78); (*this)(1,1) -= prop_w10_to_w78*std::sqrt(w10w78);
             (*this)(7,8) = std::sqrt(w10w78)/prop_w10_to_w78; (*this)(8,8) -= std::sqrt(w10w78)/prop_w10_to_w78;
@@ -142,6 +143,8 @@ class W_matrix : public Eigen::MatrixXd{
         }
 };
 
+
+// Find nonequilibrium steady state and calculate thermodynamic quantitites
 class solver{
     private:
     public:
@@ -151,7 +154,11 @@ class solver{
         }
         Eigen::EigenSolver<Eigen::MatrixXd> eigen_solver;
         void initialize(const Eigen::MatrixXd &W){eigen_solver = Eigen::EigenSolver<Eigen::MatrixXd>(W);}
+
+        // Find eigenvalues
         Eigen::VectorXd get_eigenvalues(const Eigen::MatrixXd &W){return eigen_solver.eigenvalues().real();}
+
+        // Find eigenvectors
         Eigen::MatrixXd get_eigenvectors(const Eigen::MatrixXd &W){return eigen_solver.eigenvectors().real();}
 
         // Find index of eigenvalue for the steady state.
@@ -175,10 +182,10 @@ class solver{
         double get_current(const Eigen::MatrixXd &, const Eigen::VectorXd &, int , int ) const;
         void get_main_cycle_currents(const Eigen::MatrixXd &, const Eigen::VectorXd &);
 
-        // Work rate  in the 3Na_2K cycle
+        // Work rate done in the 3Na_2K cycle
         double Work_3Na_2K(const W_matrix &, const Eigen::VectorXd &) const;
 
-        // Energy available through ATP hydrolysis
+        // Work done through ATP hydrolysis
         double Energy_3Na_2K(const W_matrix &, const Eigen::VectorXd &) const;
 
         // Heat rate in the main cycle
@@ -201,6 +208,10 @@ class solver{
         // Information flow in bipartite system
         double Idot_X(const W_matrix &, const Eigen::VectorXd &) const;
         double Idot_Y(const W_matrix &, const Eigen::VectorXd &) const;
+
+        // Entropy flow for subsystems
+        double Sdot_X(const W_matrix &, const Eigen::VectorXd &) const;
+        double Sdot_Y(const W_matrix &, const Eigen::VectorXd &) const;
 };
 
 int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
@@ -295,9 +306,22 @@ double solver::Qdot(const W_matrix &W, const Eigen::VectorXd &P) const{
 
 double solver::System_entropy(const W_matrix &W, const Eigen::VectorXd &v) const{
     double sum=0;
-    for(auto& p: v){
-        sum -= W.kB*p*log(p);
+    // for(auto& p: v){
+    //     sum -= p*log(p);
+    // }
+
+    for(int i = 0; i<13; i++){
+        sum -= std::log(v(i+1)/v(i));
     }
+    sum -= std::log(v(0)/v(13));
+    sum *= J(1,0);
+
+    // Global entropy production
+    // for(int i = 0; i<13; i++){
+    //     sum += std::log(W(i+1,i)*v(i)/(W(i,i+1)*v(i+1)));
+    // }
+    // sum += std::log(W(0,13)*v(13)/(W(13,0)*v(0)));
+    // sum *= J(1,0);
     return sum;
 }
 
@@ -417,5 +441,20 @@ double solver::Wdot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
 
     return Wdot_y;
 }
+
+double solver::Sdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
+    double sum = 0;
+
+     // The marginal probabilities of being on E1 or E2P
+    double P_E1=0,P_E2P=0;
+
+    P_E1 += P(0);
+    for(int i=9; i <= 13; i++){P_E1 += P(i);}
+    for(int i=2; i <= 7; i++){P_E2P += P(i);}
+    
+    sum -= std::log(P(1)/P_E1)+std::log(P_E2P/P(1))+std::log(P(8)/P_E2P)+std::log(P_E1/P(8));
+    return sum;
+}
+//double solver::Sdot_Y(const W_matrix &, const Eigen::VectorXd &) const;
 
 #endif // W_MATRIX_H_
