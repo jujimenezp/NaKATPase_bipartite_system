@@ -3,9 +3,11 @@
 # Script to read transition rates and pass them to main program
 from pandas import read_csv
 import subprocess
+import sys
 
-main_cpp = "src/14_states.cpp"
-main_exe = "bin/14_states.x"
+program = str(sys.argv[1])
+main_cpp = program
+main_exe = "bin/"+program[4:-4]+".x"
 flags_cpp = ['--std=c++20', '-Wall']
 
 transition_rates = read_csv("data/transition_rates.csv", skiprows=0, sep=',')
