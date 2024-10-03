@@ -109,19 +109,19 @@ class W_matrix : public Eigen::MatrixXd{
             (*this)(18,10) = ki_bN*c_Na_in; (*this)(18,18) = -ki_dN;
 
             // Additional transition rates to ensure thermodynamic consistency
-            double w10w78=1; double prop_w10_to_w78 = 1;
+            double w01w78=1; double prop_w01_to_w78 = 1;
 
             for(int i=0; i<13; i++){
-                w10w78 *= (*this)(i+1,i);
+                w01w78 *= (*this)(i+1,i);
                 if(i!=0 && i!=7){
-                    w10w78 *= 1/(*this)(i,i+1);
+                    w01w78 *= 1/(*this)(i,i+1);
                 }
             }
-            w10w78 *= (*this)(0,13)/(*this)(13,0);
-            w10w78 *= c_ADP*c_P/(c_ATP*K_h)*std::pow(c_Na_out/c_Na_in,3)*std::pow(c_K_in/c_K_out,2)*std::exp(-e*V/(kB*T));
+            w01w78 *= (*this)(0,13)/(*this)(13,0);
+            w01w78 *= c_ADP*c_P/(c_ATP*K_h)*std::pow(c_Na_out/c_Na_in,3)*std::pow(c_K_in/c_K_out,2)*std::exp(-e*V/(kB*T));
 
-            (*this)(0,1) = prop_w10_to_w78*std::sqrt(w10w78); (*this)(1,1) -= prop_w10_to_w78*std::sqrt(w10w78);
-            (*this)(7,8) = std::sqrt(w10w78)/prop_w10_to_w78; (*this)(8,8) -= std::sqrt(w10w78)/prop_w10_to_w78;
+            (*this)(0,1) = std::sqrt(prop_w01_to_w78*w01w78); (*this)(1,1) -= std::sqrt(prop_w01_to_w78*w01w78);
+            (*this)(7,8) = std::sqrt(w01w78/prop_w01_to_w78); (*this)(8,8) -= std::sqrt(w01w78/prop_w01_to_w78);
         }
 
         // Delete row and column corresponding to state index and also
@@ -222,7 +222,8 @@ int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
         throw (9999);
     }
     catch(int error){
-        std::cerr << "No eigenvalue found with absolute value under " << threshold << std::endl;
+        std::cerr << "No eigenvalue found with absolute value under " << threshold << std::endl
+                  << "Eigenvalues:\n" << eigenvalues << std::endl;
         exit(1);
     }
 }
@@ -367,9 +368,6 @@ double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
     P_E1 += P(0);
     for(int i=9; i <= 13; i++){P_E1 += P(i);}
     for(int i=2; i <= 7; i++){P_E2P += P(i);}
-    std::cout << "\nMarginal probabilities" << std::endl
-              << "P(E1) = " << P_E1 << std::endl
-              << "P(E2P) = " << P_E2P << std::endl;
 
     Idot_x += J(0,1)*log2(P(0)/P_E1) \
            + J(2,1)*log2(P(2)/P_E2P) \
