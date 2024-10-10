@@ -5,7 +5,7 @@ int main(int argc, char **argv){
     std::cout.precision(7);
 
     std::ofstream output_file("results/14_states_bw_reactions.dat");
-    output_file << "W(0,1)/W(7,8);Energy_flow_X;Information_flow_X" << std::endl;
+    output_file << "W(0,1)/W(7,8);Energy_flow_X;Information_flow_X;Probability_current" << std::endl;
     output_file.precision(15);
 
     // Create transition matrix with coefficients parsed by bin/driver.py
@@ -55,8 +55,7 @@ int main(int argc, char **argv){
     w01w78 *= W.c_ADP*W.c_P/(W.c_ATP*W.K_h)*std::pow(W.c_Na_out/W.c_Na_in,3)*std::pow(W.c_K_in/W.c_K_out,2)*std::exp(-W.e*W.V/(W.kB*W.T));
 
     double Wdot_x, Qdot_x, Edot_x, Idot_x;
-    double J_E1PNa3_in = solv.get_current(W, eigenvectors.col(i), 1, 0);
-
+  
     for (double j=5e-5; j <= 1e5; j += 1.*pow(10, floor(log10(j))) ) {
         std::cout << "W(0,1)/W(7,8) = " << j << std::endl;
 
@@ -78,9 +77,9 @@ int main(int argc, char **argv){
 
         Wdot_x = solv.Wdot_X(W, eigenvectors.col(i));
         Qdot_x = solv.Qdot_X(W, eigenvectors.col(i));
-        Edot_x = ((Wdot_x + Qdot_x)/(W.T*W.kB));
+        Edot_x = (Wdot_x + Qdot_x)/(W.T*W.kB);
         Idot_x = solv.Idot_X(W, eigenvectors.col(i));
 
-        output_file << j <<";"<< Edot_x <<";"<< Idot_x <<std::endl;
+        output_file << j <<";"<< Edot_x <<";"<< Idot_x << ";"<< solv.J(1,0) <<std::endl;
     }
 }

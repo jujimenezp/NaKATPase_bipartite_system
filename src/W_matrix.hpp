@@ -212,6 +212,41 @@ class solver{
         // Entropy flow for subsystems
         double Sdot_X(const W_matrix &, const Eigen::VectorXd &) const;
         double Sdot_Y(const W_matrix &, const Eigen::VectorXd &) const;
+
+
+
+        // 18 states
+        // Work rate done in the 3Na_2K cycle
+        double Work_3Na_2K_18states(const W_matrix &, const Eigen::VectorXd &) const;
+
+        // Work done through ATP hydrolysis
+        double Energy_3Na_2K_18states(const W_matrix &, const Eigen::VectorXd &) const;
+
+        // Heat rate in the main cycle
+        double Qdot_18states(const W_matrix&, const Eigen::VectorXd&) const;
+
+        // Entropy of the system and the environment
+        double System_entropy_18states(const W_matrix&, const Eigen::VectorXd &) const;
+
+        // Eficiency of the transport through the 3Na_2K path
+        double Efficiency_3Na_2K_18states(const W_matrix &, const Eigen::VectorXd &) const;
+
+        // Heat rate in bipartite system according to Ehrich and Sivak (2023)
+        double Qdot_X_18states(const W_matrix &, const Eigen::VectorXd &) const;
+        double Qdot_Y_18states(const W_matrix &, const Eigen::VectorXd &) const;
+
+        // Work rate in bipartite system according to Ehrich and Sivak (2023)
+        double Wdot_X_18states(const W_matrix &, const Eigen::VectorXd &) const;
+        double Wdot_Y_18states(const W_matrix &, const Eigen::VectorXd &) const;
+
+        // Information flow in bipartite system
+        double Idot_X_18states(const W_matrix &, const Eigen::VectorXd &) const;
+        double Idot_Y_18states(const W_matrix &, const Eigen::VectorXd &) const;
+
+        // Entropy flow for subsystems
+        double Sdot_X_18states(const W_matrix &, const Eigen::VectorXd &) const;
+        double Sdot_Y_18states(const W_matrix &, const Eigen::VectorXd &) const;
+
 };
 
 int solver::steady_state_index(Eigen::VectorXd &eigenvalues, double threshold){
@@ -454,5 +489,73 @@ double solver::Sdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
     return sum;
 }
 //double solver::Sdot_Y(const W_matrix &, const Eigen::VectorXd &) const;
+
+double solver::Work_3Na_2K_18states(const W_matrix &W, const Eigen::VectorXd &v)
+const{
+    double work=0;
+    //E2PNa+3 -> E2PNa+2
+    work += J(3,2) * log(W.c_Na_out);
+    
+    //E2PNa+2 -> E2PNa+
+    work += J(4,3) * log(W.c_Na_out);
+
+    //E2PNa+ -> E2P
+    work += J(5,4) * log(W.c_Na_out);
+
+    //E2P -> E2PK+
+    work -= J(6,5) * log(W.c_K_out);
+
+    //E2PK+ -> E2PK+2
+    work -= J(7,6) * log(W.c_K_out);
+
+    //E1K+2 -> E1K+
+    work += J(10,9) * log(W.c_K_in);
+
+    //E1K+ -> E1
+    work += J(11,10) * log(W.c_K_in);
+
+    //E1 -> E1Na+
+    work -= J(12,11) * log(W.c_Na_in);
+
+    //E1Na+ -> E1Na+2
+    work -= J(13,12) * log(W.c_Na_in);
+
+    //E1Na+2 -> E1Na+3
+    work -= J(0,13) * log(W.c_Na_in);
+
+    work *= W.kB*W.T;
+
+    // Effect of the transmembrane potential
+    work -= J(0,13) * W.e * W.V; //Transmembrane potential
+
+    return work;
+}
+
+double solver::Energy_3Na_2K_18states(const W_matrix &W, const Eigen::VectorXd &v) const{
+    double G = 0;
+    G += J(1,0) * log(W.c_ADP/(W.c_ATP*W.K_h));
+    G += J(8,7) * log(W.c_P);
+    G *= W.kB*W.T;
+
+    return G;
+}
+
+double solver::Qdot_18states(const W_matrix &W, const Eigen::VectorXd &P) const{
+    double result=1;
+
+    for (int i=0; i < 13; i++){
+        result *= W(i+1,i)/W(i,i+1);
+    }
+
+    result *= W(0,13)/W(13,0);
+    result *= W(4,14)/W(14,4);
+    result *= W(12,15)/W(15,12);
+    result *= W(6,16)/W(16,6);
+    result *= W(10,17)/W(17,10);
+    result = -W.kB*W.T*J(1,0)*std::log(result);
+
+    return result;
+}
+
 
 #endif // W_MATRIX_H_
