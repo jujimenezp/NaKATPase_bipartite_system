@@ -281,34 +281,34 @@ double solver::Work_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v)
 const{
     double work=0;
     //E2PNa+3 -> E2PNa+2
-    work += J(3,2) * log(W.c_Na_out);
+    work += J(3,2) * std::log(W.c_Na_out);
 
     //E2PNa+2 -> E2PNa+
-    work += J(4,3) * log(W.c_Na_out);
+    work += J(4,3) * std::log(W.c_Na_out);
 
     //E2PNa+ -> E2P
-    work += J(5,4) * log(W.c_Na_out);
+    work += J(5,4) * std::log(W.c_Na_out);
 
     //E2P -> E2PK+
-    work -= J(6,5) * log(W.c_K_out);
+    work -= J(6,5) * std::log(W.c_K_out);
 
     //E2PK+ -> E2PK+2
-    work -= J(7,6) * log(W.c_K_out);
+    work -= J(7,6) * std::log(W.c_K_out);
 
     //E1K+2 -> E1K+
-    work += J(10,9) * log(W.c_K_in);
+    work += J(10,9) * std::log(W.c_K_in);
 
     //E1K+ -> E1
-    work += J(11,10) * log(W.c_K_in);
+    work += J(11,10) * std::log(W.c_K_in);
 
     //E1 -> E1Na+
-    work -= J(12,11) * log(W.c_Na_in);
+    work -= J(12,11) * std::log(W.c_Na_in);
 
     //E1Na+ -> E1Na+2
-    work -= J(13,12) * log(W.c_Na_in);
+    work -= J(13,12) * std::log(W.c_Na_in);
 
     //E1Na+2 -> E1Na+3
-    work -= J(0,13) * log(W.c_Na_in);
+    work -= J(0,13) * std::log(W.c_Na_in);
 
     work *= W.kB*W.T;
 
@@ -320,8 +320,8 @@ const{
 
 double solver::Energy_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v) const{
     double G = 0;
-    G += J(1,0) * log(W.c_ADP/(W.c_ATP*W.K_h));
-    G += J(8,7) * log(W.c_P);
+    G += J(1,0) * std::log(W.c_ADP/(W.c_ATP*W.K_h));
+    G += J(8,7) * std::log(W.c_P);
     G *= W.kB*W.T;
     
     return G;
@@ -343,7 +343,7 @@ double solver::Qdot(const W_matrix &W, const Eigen::VectorXd &P) const{
 double solver::System_entropy(const W_matrix &W, const Eigen::VectorXd &v) const{
     double sum=0;
     // for(auto& p: v){
-    //     sum -= p*log(p);
+    //     sum -= p*std::log(p);
     // }
 
     for(int i = 0; i<13; i++){
@@ -366,24 +366,24 @@ double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v) co
 
     double W_Na=0, W_K=0, W_ATP=0;
 
-    W_Na += J(3,2) * log(W.c_Na_out);
-    W_Na += J(4,3) * log(W.c_Na_out);
-    W_Na += J(5,4) * log(W.c_Na_out);
-    W_Na -= J(12,11) * log(W.c_Na_in);
-    W_Na -= J(13,12) * log(W.c_Na_in);
-    W_Na -= J(0,13) * log(W.c_Na_in);
+    W_Na += J(3,2) * std::log(W.c_Na_out);
+    W_Na += J(4,3) * std::log(W.c_Na_out);
+    W_Na += J(5,4) * std::log(W.c_Na_out);
+    W_Na -= J(12,11) * std::log(W.c_Na_in);
+    W_Na -= J(13,12) * std::log(W.c_Na_in);
+    W_Na -= J(0,13) * std::log(W.c_Na_in);
     W_Na *= W.kB*W.T;
     W_Na -= 3*J(0,13) * W.e * W.V;
 
-    W_K -= J(6,5) * log(W.c_K_out);
-    W_K -= J(7,6) * log(W.c_K_out);
-    W_K += J(10,9) * log(W.c_K_in);
-    W_K += J(11,10) * log(W.c_K_in);
+    W_K -= J(6,5) * std::log(W.c_K_out);
+    W_K -= J(7,6) * std::log(W.c_K_out);
+    W_K += J(10,9) * std::log(W.c_K_in);
+    W_K += J(11,10) * std::log(W.c_K_in);
     W_K *= W.kB*W.T;
     W_K += 2*J(0,13) * W.e * W.V;
 
-    W_ATP += J(1,0) * log(W.c_ADP/(W.c_ATP*W.K_h));
-    W_ATP += J(8,7) * log(W.c_P);
+    W_ATP += J(1,0) * std::log(W.c_ADP/(W.c_ATP*W.K_h));
+    W_ATP += J(8,7) * std::log(W.c_P);
     W_ATP *= W.kB*W.T;
 
     std::cout << "\nW_ATP: " << W_ATP << std::endl
@@ -404,10 +404,10 @@ double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
     for(int i=9; i <= 13; i++){P_E1 += P(i);}
     for(int i=2; i <= 7; i++){P_E2P += P(i);}
 
-    Idot_x += J(0,1)*log2(P(0)/P_E1) \
-           + J(2,1)*log2(P(2)/P_E2P) \
-           + J(7,8)*log2(P(7)/P_E2P) \
-           + J(9,8)*log2(P(9)/P_E1);
+    Idot_x += J(0,1)*std::log2(P(0)/P_E1) \
+           + J(2,1)*std::log2(P(2)/P_E2P) \
+           + J(7,8)*std::log2(P(7)/P_E2P) \
+           + J(9,8)*std::log2(P(9)/P_E1);
 
     return Idot_x;
 }
@@ -424,16 +424,16 @@ double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
     P_K = P(10) + P(6);
     P_K2 = P(9) + P(8) + P(7);
 
-    Idot_y += J(0,13) * log2(P(0)*P_Na2/(P(13)*P_Na3)) /*Sum of X=E1*/\
-           + J(13,12) * log2(P(13)*P_Na/(P(12)*P_Na2)) \
-           + J(12,11) * log2(P(12)*P_0/(P(11)*P_Na)) \
-           + J(11,10) * log2(P(11)*P_K/(P(10)*P_0)) \
-           + J(10,9) * log2(P(10)*P_K2/(P(9)*P_K)) \
-           + J(2,3) * log2(P(2)*P_Na2/(P(3)*P_Na3)) /*Sum of X=E2P*/\
-           + J(3,4) * log2(P(3)*P_Na/(P(4)*P_Na2)) \
-           + J(4,5) * log2(P(4)*P_0/(P(5)*P_Na)) \
-           + J(5,6) * log2(P(5)*P_K/(P(6)*P_0)) \
-           + J(6,7) * log2(P(6)*P_K2/(P(7)*P_K));
+    Idot_y += J(0,13) * std::log2(P(0)*P_Na2/(P(13)*P_Na3)) /*Sum of X=E1*/\
+           + J(13,12) * std::log2(P(13)*P_Na/(P(12)*P_Na2)) \
+           + J(12,11) * std::log2(P(12)*P_0/(P(11)*P_Na)) \
+           + J(11,10) * std::log2(P(11)*P_K/(P(10)*P_0)) \
+           + J(10,9) * std::log2(P(10)*P_K2/(P(9)*P_K)) \
+           + J(2,3) * std::log2(P(2)*P_Na2/(P(3)*P_Na3)) /*Sum of X=E2P*/\
+           + J(3,4) * std::log2(P(3)*P_Na/(P(4)*P_Na2)) \
+           + J(4,5) * std::log2(P(4)*P_0/(P(5)*P_Na)) \
+           + J(5,6) * std::log2(P(5)*P_K/(P(6)*P_0)) \
+           + J(6,7) * std::log2(P(6)*P_K2/(P(7)*P_K));
 
     return Idot_y;
 }
@@ -441,7 +441,7 @@ double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
 double solver::Qdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Qdot_x=0;
 
-    Qdot_x = J(0,1)*log(W(0,1)/W(1,0)) + J(2,1)*log(W(2,1)/W(1,2)) + J(7,8)*log(W(7,8)/W(8,7)) + J(9,8)*log(W(9,8)/W(8,9));
+    Qdot_x = J(0,1)*std::log(W(0,1)/W(1,0)) + J(2,1)*std::log(W(2,1)/W(1,2)) + J(7,8)*std::log(W(7,8)/W(8,7)) + J(9,8)*std::log(W(9,8)/W(8,9));
     Qdot_x *= -W.kB*W.T;
     return Qdot_x;
 }
@@ -449,25 +449,25 @@ double solver::Qdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
 double solver::Qdot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Qdot_y=0;
 
-    Qdot_y += J(0,13)*log(W(0,13)/W(13,0)) + J(13,12)*log(W(13,12)/W(12,13)) + J(12,11)*log(W(12,11)/W(11,12)) \
-           + J(11,10)*log(W(11,10)/W(10,11)) + J(10,9)*log(W(10,9)/W(9,10));
-    Qdot_y += J(2,3)*log(W(2,3)/W(3,2)) + J(3,4)*log(W(3,4)/W(4,3)) + J(4,5)*log(W(4,5)/W(5,4)) \
-           + J(5,6)*log(W(5,6)/W(6,5)) + J(6,7)*log(W(6,7)/W(7,6));
+    Qdot_y += J(0,13)*std::log(W(0,13)/W(13,0)) + J(13,12)*std::log(W(13,12)/W(12,13)) + J(12,11)*std::log(W(12,11)/W(11,12)) \
+           + J(11,10)*std::log(W(11,10)/W(10,11)) + J(10,9)*std::log(W(10,9)/W(9,10));
+    Qdot_y += J(2,3)*std::log(W(2,3)/W(3,2)) + J(3,4)*std::log(W(3,4)/W(4,3)) + J(4,5)*std::log(W(4,5)/W(5,4)) \
+           + J(5,6)*std::log(W(5,6)/W(6,5)) + J(6,7)*std::log(W(6,7)/W(7,6));
     Qdot_y *= -W.kB*W.T;
     return Qdot_y;
 }
 
 double solver::Wdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
-    double U_ATP = W.kB*W.T*log(W.c_ADP*W.c_P/(W.c_ATP*W.K_h))/2.;
+    double U_ATP = W.kB*W.T*std::log(W.c_ADP*W.c_P/(W.c_ATP*W.K_h))/2.;
 
     double Wdot_x = -J(1,0)*U_ATP - J(8,7)*U_ATP;
     return Wdot_x;
 }
 double solver::Wdot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
-    double U_Na1 = W.kB*W.T*log(W.c_Na_out) - W.e*W.V/2.;
-    double U_Na2 = -W.kB*W.T*log(W.c_Na_in) - W.e*W.V/2.;
-    double U_K1 = -W.kB*W.T*log(W.c_K_out) + W.e*W.V/2.;
-    double U_K2 = W.kB*W.T*log(W.c_K_in) + W.e*W.V/2.;
+    double U_Na1 = W.kB*W.T*std::log(W.c_Na_out) - W.e*W.V/2.;
+    double U_Na2 = -W.kB*W.T*std::log(W.c_Na_in) - W.e*W.V/2.;
+    double U_K1 = -W.kB*W.T*std::log(W.c_K_out) + W.e*W.V/2.;
+    double U_K2 = W.kB*W.T*std::log(W.c_K_in) + W.e*W.V/2.;
 
     double Wdot_y = -U_Na1*(J(3,2)+J(4,3)+J(5,4)) - U_Na2*(J(12,11)+J(13,12)+J(0,13)) \
              -U_K1*(J(6,5)+J(7,6)) - U_K2*(J(10,9)+J(11,10));
@@ -490,72 +490,4 @@ double solver::Sdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
 }
 //double solver::Sdot_Y(const W_matrix &, const Eigen::VectorXd &) const;
 
-double solver::Work_3Na_2K_18states(const W_matrix &W, const Eigen::VectorXd &v)
-const{
-    double work=0;
-    //E2PNa+3 -> E2PNa+2
-    work += J(3,2) * log(W.c_Na_out);
-    
-    //E2PNa+2 -> E2PNa+
-    work += J(4,3) * log(W.c_Na_out);
-
-    //E2PNa+ -> E2P
-    work += J(5,4) * log(W.c_Na_out);
-
-    //E2P -> E2PK+
-    work -= J(6,5) * log(W.c_K_out);
-
-    //E2PK+ -> E2PK+2
-    work -= J(7,6) * log(W.c_K_out);
-
-    //E1K+2 -> E1K+
-    work += J(10,9) * log(W.c_K_in);
-
-    //E1K+ -> E1
-    work += J(11,10) * log(W.c_K_in);
-
-    //E1 -> E1Na+
-    work -= J(12,11) * log(W.c_Na_in);
-
-    //E1Na+ -> E1Na+2
-    work -= J(13,12) * log(W.c_Na_in);
-
-    //E1Na+2 -> E1Na+3
-    work -= J(0,13) * log(W.c_Na_in);
-
-    work *= W.kB*W.T;
-
-    // Effect of the transmembrane potential
-    work -= J(0,13) * W.e * W.V; //Transmembrane potential
-
-    return work;
-}
-
-double solver::Energy_3Na_2K_18states(const W_matrix &W, const Eigen::VectorXd &v) const{
-    double G = 0;
-    G += J(1,0) * log(W.c_ADP/(W.c_ATP*W.K_h));
-    G += J(8,7) * log(W.c_P);
-    G *= W.kB*W.T;
-
-    return G;
-}
-
-double solver::Qdot_18states(const W_matrix &W, const Eigen::VectorXd &P) const{
-    double result=1;
-
-    for (int i=0; i < 13; i++){
-        result *= W(i+1,i)/W(i,i+1);
-    }
-
-    result *= W(0,13)/W(13,0);
-    result *= W(4,14)/W(14,4);
-    result *= W(12,15)/W(15,12);
-    result *= W(6,16)/W(16,6);
-    result *= W(10,17)/W(17,10);
-    result = -W.kB*W.T*J(1,0)*std::log(result);
-
-    return result;
-}
-
-
-#endif // W_MATRIX_H_
+#endif // W_MATRIX_H
