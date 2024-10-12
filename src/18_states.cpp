@@ -89,8 +89,8 @@ int main(int argc, char **argv){
     // Information of bipartite system
     double I_dot_X = solv.Idot_X_18states(W, eigenvectors.col(i));
     double I_dot_Y = solv.Idot_Y_18states(W, eigenvectors.col(i));
-    output_file << "\nInformation of bipartite system\ndI_X/dt = " << I_dot_X/J_E1PNa3_in << " bits/cycle" << std::endl
-              << "dI_Y/dt = " << I_dot_Y/J_E1PNa3_in << " bits/cycle" << std::endl;
+    output_file << "\nInformation of bipartite system\ndI_X/dt = " << I_dot_X/(J_E1PNa3_in*std::log2(M_E)) << " nats/cycle" << std::endl
+              << "dI_Y/dt = " << I_dot_Y/(J_E1PNa3_in*std::log2(M_E)) << " nats/cycle" << std::endl;
 
     output_file.close();
     return 0;

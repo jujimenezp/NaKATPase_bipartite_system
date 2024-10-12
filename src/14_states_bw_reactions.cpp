@@ -80,6 +80,6 @@ int main(int argc, char **argv){
         Edot_x = (Wdot_x + Qdot_x)/(W.T*W.kB);
         Idot_x = solv.Idot_X(W, eigenvectors.col(i));
 
-        output_file << j <<";"<< Edot_x <<";"<< Idot_x << ";"<< solv.J(1,0) <<std::endl;
+        output_file << j <<";"<< Edot_x/solv.J(1,0) <<";"<< Idot_x/(solv.J(1,0)*std::log2(M_E)) << ";"<< solv.J(1,0) <<std::endl;
     }
 }
