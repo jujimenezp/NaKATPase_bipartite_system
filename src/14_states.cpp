@@ -55,22 +55,22 @@ int main(int argc, char **argv){
 
     // Work and heat rates in the 3Na-2K path
     double work_3Na_2K = solv.Work_3Na_2K(W, eigenvectors.col(i)) + solv.Energy_3Na_2K(W, eigenvectors.col(i));
-    output_file << "\nWork rate through the 3Na_2K path: " << work_3Na_2K << W.E_rate_units << std::endl;
+    output_file << "\nWork rate through the 3Na_2K path: " << work_3Na_2K/(W.T*W.kB*J_E1PNa3_in) << " kBT/cycle" << std::endl;
     double Qdot = solv.Qdot(W, eigenvectors.col(i));
-    output_file << "Heat rate through the 3Na_2K path: " << Qdot << W.E_rate_units << std::endl;
+    output_file << "Heat rate through the 3Na_2K path: " << Qdot/(W.T*W.kB*J_E1PNa3_in) << " kBT/cycle" << std::endl;
 
     // Work and heat rates for the subsystems
     double Qdot_x = solv.Qdot_X(W, eigenvectors.col(i));
     double Qdot_y = solv.Qdot_Y(W, eigenvectors.col(i));
     output_file << "\nHeat rate for bipartite system:" << std::endl
-                << "Qdot_x = " << Qdot_x << W.E_rate_units << std::endl
-                << "Qdot_y = " << Qdot_y << W.E_rate_units << std::endl;
+                << "Qdot_x = " << Qdot_x/(W.T*W.kB*J_E1PNa3_in) << " kBT/cycle" << std::endl
+                << "Qdot_y = " << Qdot_y/(W.T*W.kB*J_E1PNa3_in) << " kBT/cycle" << std::endl;
 
     double Wdot_x = solv.Wdot_X(W, eigenvectors.col(i));
     double Wdot_y = solv.Wdot_Y(W, eigenvectors.col(i));
     output_file << "\nWork rate for bipartite system:" << std::endl
-                << "Wdot_x = " << Wdot_x << W.E_rate_units << std::endl
-                << "Wdot_y = " << Wdot_y << W.E_rate_units << std::endl;
+                << "Wdot_x = " << Wdot_x/(W.T*W.kB*J_E1PNa3_in) << " kBT/cycle" << std::endl
+                << "Wdot_y = " << Wdot_y/(W.T*W.kB*J_E1PNa3_in) << " kBT/cycle" << std::endl;
 
     // Entropy production
     double entropy_sys_3Na_2K = solv.System_entropy(W, eigenvectors.col(i));
