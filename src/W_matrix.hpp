@@ -404,10 +404,10 @@ double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
     for(int i=9; i <= 13; i++){P_E1 += P(i);}
     for(int i=2; i <= 7; i++){P_E2P += P(i);}
 
-    Idot_x += J(0,1)*std::log2(P(0)/P_E1) \
-           + J(2,1)*std::log2(P(2)/P_E2P) \
-           + J(7,8)*std::log2(P(7)/P_E2P) \
-           + J(9,8)*std::log2(P(9)/P_E1);
+    Idot_x += std::log2(P_E1/P(0)) \
+           + std::log2(P(2)/P_E2P) \
+           + std::log2(P_E2P/P(7)) \
+           + std::log2(P(9)/P_E1);
 
     return Idot_x;
 }
@@ -424,16 +424,16 @@ double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
     P_K = P(10) + P(6);
     P_K2 = P(9) + P(8) + P(7);
 
-    Idot_y += J(0,13) * std::log2(P(0)*P_Na2/(P(13)*P_Na3)) /*Sum of X=E1*/\
-           + J(13,12) * std::log2(P(13)*P_Na/(P(12)*P_Na2)) \
-           + J(12,11) * std::log2(P(12)*P_0/(P(11)*P_Na)) \
-           + J(11,10) * std::log2(P(11)*P_K/(P(10)*P_0)) \
-           + J(10,9) * std::log2(P(10)*P_K2/(P(9)*P_K)) \
-           + J(2,3) * std::log2(P(2)*P_Na2/(P(3)*P_Na3)) /*Sum of X=E2P*/\
-           + J(3,4) * std::log2(P(3)*P_Na/(P(4)*P_Na2)) \
-           + J(4,5) * std::log2(P(4)*P_0/(P(5)*P_Na)) \
-           + J(5,6) * std::log2(P(5)*P_K/(P(6)*P_0)) \
-           + J(6,7) * std::log2(P(6)*P_K2/(P(7)*P_K));
+    Idot_y += std::log2(P(0)*P_Na2/(P(13)*P_Na3)) /*Sum of X=E1*/\
+           + std::log2(P(13)*P_Na/(P(12)*P_Na2)) \
+           + std::log2(P(12)*P_0/(P(11)*P_Na)) \
+           + std::log2(P(11)*P_K/(P(10)*P_0)) \
+           + std::log2(P(10)*P_K2/(P(9)*P_K)) \
+           + std::log2(P(2)*P_Na2/(P(3)*P_Na3)) /*Sum of X=E2P*/\
+           + std::log2(P(3)*P_Na/(P(4)*P_Na2)) \
+           + std::log2(P(4)*P_0/(P(5)*P_Na)) \
+           + std::log2(P(5)*P_K/(P(6)*P_0)) \
+           + std::log2(P(6)*P_K2/(P(7)*P_K));
 
     return Idot_y;
 }

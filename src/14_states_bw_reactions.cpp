@@ -56,7 +56,7 @@ int main(int argc, char **argv){
 
     double Wdot_x, Qdot_x, Edot_x, Idot_x;
   
-    for (double j=5e-5; j <= 1e5; j += 1.*pow(10, floor(log10(j))) ) {
+    for (double j=5e-5; j <= 1e6; j += 1.*pow(10, floor(log10(j))) ) {
         std::cout << "W(0,1)/W(7,8) = " << j << std::endl;
 
         //Update proportion of W01 to W78
@@ -80,6 +80,6 @@ int main(int argc, char **argv){
         Edot_x = (Wdot_x + Qdot_x)/(W.T*W.kB);
         Idot_x = solv.Idot_X(W, eigenvectors.col(i));
 
-        output_file << j <<";"<< Edot_x/solv.J(1,0) <<";"<< Idot_x/(solv.J(1,0)*std::log2(M_E)) << ";"<< solv.J(1,0) <<std::endl;
+        output_file << j <<";"<< Edot_x/solv.J(1,0) <<";"<< Idot_x/std::log2(M_E) << ";"<< solv.J(1,0) <<std::endl;
     }
 }
