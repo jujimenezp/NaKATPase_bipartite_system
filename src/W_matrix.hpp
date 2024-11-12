@@ -40,7 +40,9 @@ class W_matrix : public Eigen::MatrixXd{
                  double  ki_bN1v0i, double ki_dNi, double  ki_bNi, double  ki_dKi, double  ki_bki, \
                  double Ti, double Vi, double Fi, double Ri,            \
                  double c_Na_outi, double c_Na_ini, double c_K_outi, double c_K_ini, \
-                 double c_ATPi, double c_ADPi, double c_Pi, double K_hi, std::string J_or_eV) : Eigen::MatrixXd(19,19)
+                 double c_ATPi, double c_ADPi, double c_Pi, double K_hi, std::string J_or_eV, \
+                 double c_Na_out_prop, double c_Na_in_prop, double c_K_out_prop, double c_K_in_prop, \
+                 double c_ATP_prop, double c_ADP_prop, double c_P_prop) : Eigen::MatrixXd(19,19)
         {
             T=Ti; V=Vi; F=Fi; R=Ri;
             k_1=k_1i; k_2fv0=k_2fv0i; k_2rv0=k_2rv0i; ko_dN1v0=ko_dN1v0i; ko_bN1v0=ko_bN1v0i;
@@ -61,8 +63,8 @@ class W_matrix : public Eigen::MatrixXd{
             ki_dN1 = ki_dN1v0*std::exp(-0.25*FVoRT);
             ki_bN1 = ki_bN1v0*std::exp(0.25*FVoRT);
 
-            c_Na_out=c_Na_outi; c_Na_in=c_Na_ini; c_K_out=c_K_outi; c_K_in=c_K_ini;
-            c_ATP=c_ATPi; c_ADP=c_ADPi, c_P=c_Pi, K_h=K_hi;
+            c_Na_out=c_Na_outi*c_Na_out_prop; c_Na_in=c_Na_ini*c_Na_in_prop; c_K_out=c_K_outi*c_K_out_prop; c_K_in=c_K_ini*c_K_in_prop;
+            c_ATP=c_ATPi*c_ATP_prop; c_ADP=c_ADPi*c_ADP_prop, c_P=c_Pi*c_P_prop, K_h=K_hi;
 
             // Define if the results are in J or eV
              try{
@@ -88,8 +90,8 @@ class W_matrix : public Eigen::MatrixXd{
              // construccion of the W matrix
             (*this).setZero();
 
-            (*this)(0,0) = -(k_1+ki_dN1); (*this)(0,13) = ki_bN1*c_Na_in;
-            (*this)(1,0) = k_1; (*this)(1,1) = -k_2f; (*this)(1,2) = k_2r;
+            (*this)(0,0) = -(k_1*c_ATP_prop+ki_dN1); (*this)(0,13) = ki_bN1*c_Na_in;
+            (*this)(1,0) = k_1*c_ATP_prop; (*this)(1,1) = -k_2f; (*this)(1,2) = k_2r;
             (*this)(2,1) = k_2f; (*this)(2,2) = -(k_2r+ko_dN1); (*this)(2,3)=ko_bN1*c_Na_out;
             (*this)(3,2) = ko_dN1; (*this)(3,3) = -(ko_bN1*c_Na_out+k_31+2*ko_dN); (*this)(3,4) = ko_bN*c_Na_out;
             (*this)(4,3) = 2*ko_dN; (*this)(4,4) = -(ko_bN*c_Na_out+ko_bK*c_K_out+ko_dN); (*this)(4,5) = 2*ko_bN*c_Na_out; (*this)(4,15) = ko_dK;
@@ -120,8 +122,8 @@ class W_matrix : public Eigen::MatrixXd{
             w01w78 *= (*this)(0,13)/(*this)(13,0);
             w01w78 *= c_ADP*c_P/(c_ATP*K_h)*std::pow(c_Na_out/c_Na_in,3)*std::pow(c_K_in/c_K_out,2)*std::exp(-e*V/(kB*T));
 
-            (*this)(0,1) = std::sqrt(prop_w01_to_w78*w01w78); (*this)(1,1) -= std::sqrt(prop_w01_to_w78*w01w78);
-            (*this)(7,8) = std::sqrt(w01w78/prop_w01_to_w78); (*this)(8,8) -= std::sqrt(w01w78/prop_w01_to_w78);
+            (*this)(0,1) = std::sqrt(prop_w01_to_w78*w01w78)*c_ADP_prop; (*this)(1,1) -= std::sqrt(prop_w01_to_w78*w01w78)*c_ADP_prop;
+            (*this)(7,8) = std::sqrt(w01w78/prop_w01_to_w78)*c_P_prop; (*this)(8,8) -= std::sqrt(w01w78/prop_w01_to_w78)*c_P_prop;
         }
 
         // Delete row and column corresponding to state index and also

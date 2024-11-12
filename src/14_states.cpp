@@ -15,7 +15,8 @@ int main(int argc, char **argv){
                std::stod(argv[17]),std::stod(argv[18]),std::stod(argv[19]), std::stod(argv[20]), \
                std::stod(argv[21]),std::stod(argv[22]),std::stod(argv[23]), std::stod(argv[24]), \
                std::stod(argv[25]),std::stod(argv[26]),std::stod(argv[27]), std::stod(argv[28]), \
-               std::stod(argv[29]),std::stod(argv[30]),std::stod(argv[31]), "eV");
+               std::stod(argv[29]),std::stod(argv[30]),std::stod(argv[31]), "eV", 1, 1, 0.9, 1, \
+               1, 1, 1);
 
     // Dead-end states and secondary path states deleted
     W.delete_state(18);
@@ -91,5 +92,6 @@ int main(int argc, char **argv){
               << "dI_Y/dt = " << I_dot_Y/std::log2(M_E) << " nats/cycle" << std::endl;
 
     output_file.close();
+    std::cout << "Current: " << J_E1PNa3_in << std::endl;
     return 0;
 }
