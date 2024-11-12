@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
-#include<string>
+#include <string>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigenvalues>
 
@@ -150,7 +150,13 @@ class W_matrix : public Eigen::MatrixXd{
 class solver{
     private:
     public:
+        // Currents
         Eigen::MatrixXd J;
+
+        //Bipartite Subsystems
+        std::unordered_map<int, std::vector<int>> X;
+        std::unordered_map<int, std::vector<int>> Y;
+
         solver(int J_size){
             J = Eigen::MatrixXd::Zero(J_size,J_size);
         }
@@ -183,6 +189,9 @@ class solver{
         // Calculate current J_ji going from state i to state j.
         double get_current(const Eigen::MatrixXd &, const Eigen::VectorXd &, int , int ) const;
         void get_main_cycle_currents(const Eigen::MatrixXd &, const Eigen::VectorXd &);
+
+        // Define X and Y subsystems
+        void bipartite_subsystems(const W_matrix &, const Eigen::VectorXd &, const std::unordered_map<int ,std::vector<int>>, const std::unordered_map<int ,std::vector<int>> );
 
         // Work rate done in the 3Na_2K cycle
         double Work_3Na_2K(const W_matrix &, const Eigen::VectorXd &) const;
@@ -443,7 +452,17 @@ double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
 double solver::Qdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Qdot_x=0;
 
-    Qdot_x = J(0,1)*std::log(W(0,1)/W(1,0)) + J(2,1)*std::log(W(2,1)/W(1,2)) + J(7,8)*std::log(W(7,8)/W(8,7)) + J(9,8)*std::log(W(9,8)/W(8,9));
+    for (const auto &[i, m]: X){
+        for (const auto & [j,n]: X){
+            if (i<=j) continue;
+            for (const auto & p: m){
+                for (const auto & q:n){
+                    if(W(p,q) == 0 || W(q,p) == 0) continue;
+                    Qdot_x += J(q,p)*std::log(W(q,p)/W(p,q));
+                }
+            }
+        }
+    }
     Qdot_x *= -W.kB*W.T;
     return Qdot_x;
 }
@@ -451,10 +470,18 @@ double solver::Qdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
 double solver::Qdot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Qdot_y=0;
 
-    Qdot_y += J(0,13)*std::log(W(0,13)/W(13,0)) + J(13,12)*std::log(W(13,12)/W(12,13)) + J(12,11)*std::log(W(12,11)/W(11,12)) \
-           + J(11,10)*std::log(W(11,10)/W(10,11)) + J(10,9)*std::log(W(10,9)/W(9,10));
-    Qdot_y += J(2,3)*std::log(W(2,3)/W(3,2)) + J(3,4)*std::log(W(3,4)/W(4,3)) + J(4,5)*std::log(W(4,5)/W(5,4)) \
-           + J(5,6)*std::log(W(5,6)/W(6,5)) + J(6,7)*std::log(W(6,7)/W(7,6));
+    for (const auto &[i, m]: Y){
+        for (const auto &[j,n]: Y){
+            if (i<=j) continue;
+            for (const auto & p: m){
+                for (const auto & q: n){
+                    if(W(p,q) == 0 || W(q,p) == 0) continue;
+                    Qdot_y += J(q,p)*std::log(W(q,p)/W(p,q));
+                }
+            }
+        }
+    }
+
     Qdot_y *= -W.kB*W.T;
     return Qdot_y;
 }
@@ -490,6 +517,12 @@ double solver::Sdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
     sum -= std::log(P(1)/P_E1)+std::log(P_E2P/P(1))+std::log(P(8)/P_E2P)+std::log(P_E1/P(8));
     return sum;
 }
-//double solver::Sdot_Y(const W_matrix &, const Eigen::VectorXd &) const;
+
+void solver::bipartite_subsystems(const W_matrix &W, const Eigen::VectorXd &P, const std::unordered_map<int ,std::vector<int>> Xi, const std::unordered_map<int ,std::vector<int>> Yi){
+    X=Xi;
+    Y=Yi;
+}
+
+
 
 #endif // W_MATRIX_H
