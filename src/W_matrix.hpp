@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <algorithm>
+#include <numeric>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigenvalues>
 
@@ -408,46 +409,43 @@ double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v) co
 }
 
 double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
-    double Idot_x = 0;
-    // The marginal probabilities of being on E1 or E2P
-    double P_E1=0,P_E2P=0;
+    double Idot_x = 0, P1, P2;
 
-    P_E1 += P(0);
-    for(int i=9; i <= 13; i++){P_E1 += P(i);}
-    for(int i=2; i <= 7; i++){P_E2P += P(i);}
+    for (const auto & [i,m]: X){
+        P1 = std::reduce(m.begin(),m.end());
+        for (const auto & [j,n]: X){
+            if(i<=j) continue;
+            P2 = std::reduce(n.begin(),n.end());
+            for (const auto & p: m){
+                for (const auto & q: n){
+                    if(J(p,q)==0) continue;
+                    Idot_x -= J(p,q)*std::log2((P(p)/P1)*(P2/P(q)));
+                }
+            }
+        }
+    }
 
-    Idot_x += std::log2(P_E1/P(0)) \
-           + std::log2(P(2)/P_E2P) \
-           + std::log2(P_E2P/P(7)) \
-           + std::log2(P(9)/P_E1);
-
-    return Idot_x;
+    return Idot_x/J(1,0);
 }
 
 double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
-    double Idot_y = 0;
+    double Idot_y = 0, P1, P2;
 
-    // Marginal probabilities
-    double P_Na3, P_Na2, P_Na, P_K, P_K2, P_0;
-    P_Na3 = P(0) + P(1) + P(2);
-    P_Na2 = P(13) + P(3);
-    P_Na = P(12) + P(4);
-    P_0 = P(11) + P(5);
-    P_K = P(10) + P(6);
-    P_K2 = P(9) + P(8) + P(7);
+    for (const auto & [i,m]: Y){
+        P1 = std::reduce(m.begin(),m.end());
+        for (const auto & [j,n]: Y){
+            if(i<=j) continue;
+            P2 = std::reduce(n.begin(),n.end());
+            for (const auto & p: m){
+                for (const auto & q: n){
+                    if(J(p,q)==0) continue;
+                    Idot_y -= J(p,q)*std::log2((P(p)/P1)*(P2/P(q)));
+                }
+            }
+        }
+    }
 
-    Idot_y += std::log2(P(0)*P_Na2/(P(13)*P_Na3)) /*Sum of X=E1*/\
-           + std::log2(P(13)*P_Na/(P(12)*P_Na2)) \
-           + std::log2(P(12)*P_0/(P(11)*P_Na)) \
-           + std::log2(P(11)*P_K/(P(10)*P_0)) \
-           + std::log2(P(10)*P_K2/(P(9)*P_K)) \
-           + std::log2(P(2)*P_Na2/(P(3)*P_Na3)) /*Sum of X=E2P*/\
-           + std::log2(P(3)*P_Na/(P(4)*P_Na2)) \
-           + std::log2(P(4)*P_0/(P(5)*P_Na)) \
-           + std::log2(P(5)*P_K/(P(6)*P_0)) \
-           + std::log2(P(6)*P_K2/(P(7)*P_K));
-
-    return Idot_y;
+    return Idot_y/J(1,0);
 }
 
 double solver::Qdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
