@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigenvalues>
 
@@ -487,19 +488,52 @@ double solver::Qdot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
 }
 
 double solver::Wdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
+    double Wdot_x = 0;
     double U_ATP = W.kB*W.T*std::log(W.c_ADP*W.c_P/(W.c_ATP*W.K_h))/2.;
-
-    double Wdot_x = -J(1,0)*U_ATP - J(8,7)*U_ATP;
-    return Wdot_x;
-}
-double solver::Wdot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
     double U_Na1 = W.kB*W.T*std::log(W.c_Na_out) - W.e*W.V/2.;
     double U_Na2 = -W.kB*W.T*std::log(W.c_Na_in) - W.e*W.V/2.;
     double U_K1 = -W.kB*W.T*std::log(W.c_K_out) + W.e*W.V/2.;
     double U_K2 = W.kB*W.T*std::log(W.c_K_in) + W.e*W.V/2.;
 
-    double Wdot_y = -U_Na1*(J(3,2)+J(4,3)+J(5,4)) - U_Na2*(J(12,11)+J(13,12)+J(0,13)) \
-             -U_K1*(J(6,5)+J(7,6)) - U_K2*(J(10,9)+J(11,10));
+    for (const auto & [i,m]: X){
+        if(std::find(m.begin(),m.end(),0) != m.end() && std::find(m.begin(),m.end(),1) == m.end()) Wdot_x -= J(1,0)*U_ATP;
+        if(std::find(m.begin(),m.end(),7) != m.end() && std::find(m.begin(),m.end(),8) == m.end()) Wdot_x -= J(8,7)*U_ATP;
+        if(std::find(m.begin(),m.end(),2) != m.end() && std::find(m.begin(),m.end(),3) == m.end()) Wdot_x -= J(3,2)*U_Na1;
+        if(std::find(m.begin(),m.end(),3) != m.end() && std::find(m.begin(),m.end(),4) == m.end()) Wdot_x -= J(4,3)*U_Na1;
+        if(std::find(m.begin(),m.end(),4) != m.end() && std::find(m.begin(),m.end(),5) == m.end()) Wdot_x -= J(5,4)*U_Na1;
+        if(std::find(m.begin(),m.end(),11) != m.end() && std::find(m.begin(),m.end(),12) == m.end()) Wdot_x -= J(12,11)*U_Na2;
+        if(std::find(m.begin(),m.end(),12) != m.end() && std::find(m.begin(),m.end(),13) == m.end()) Wdot_x -= J(13,12)*U_Na2;
+        if(std::find(m.begin(),m.end(),0) != m.end() && std::find(m.begin(),m.end(),13) == m.end()) Wdot_x -= J(0,13)*U_Na2;
+        if(std::find(m.begin(),m.end(),5) != m.end() && std::find(m.begin(),m.end(),6) == m.end()) Wdot_x -= J(6,5)*U_K1;
+        if(std::find(m.begin(),m.end(),6) != m.end() && std::find(m.begin(),m.end(),7) == m.end()) Wdot_x -= J(7,6)*U_K1;
+        if(std::find(m.begin(),m.end(),9) != m.end() && std::find(m.begin(),m.end(),10) == m.end()) Wdot_x -= J(10,9)*U_K2;
+        if(std::find(m.begin(),m.end(),10) != m.end() && std::find(m.begin(),m.end(),11) == m.end()) Wdot_x -= J(11,10)*U_K2;
+    }
+
+    return Wdot_x;
+}
+double solver::Wdot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
+    double Wdot_y = 0;
+    double U_ATP = W.kB*W.T*std::log(W.c_ADP*W.c_P/(W.c_ATP*W.K_h))/2.;
+    double U_Na1 = W.kB*W.T*std::log(W.c_Na_out) - W.e*W.V/2.;
+    double U_Na2 = -W.kB*W.T*std::log(W.c_Na_in) - W.e*W.V/2.;
+    double U_K1 = -W.kB*W.T*std::log(W.c_K_out) + W.e*W.V/2.;
+    double U_K2 = W.kB*W.T*std::log(W.c_K_in) + W.e*W.V/2.;
+
+    for (const auto & [i,m]: Y){
+        if(std::find(m.begin(),m.end(),0) != m.end() && std::find(m.begin(),m.end(),1) == m.end()) Wdot_y -= J(1,0)*U_ATP;
+        if(std::find(m.begin(),m.end(),7) != m.end() && std::find(m.begin(),m.end(),8) == m.end()) Wdot_y -= J(8,7)*U_ATP;
+        if(std::find(m.begin(),m.end(),2) != m.end() && std::find(m.begin(),m.end(),3) == m.end()) Wdot_y -= J(3,2)*U_Na1;
+        if(std::find(m.begin(),m.end(),3) != m.end() && std::find(m.begin(),m.end(),4) == m.end()) Wdot_y -= J(4,3)*U_Na1;
+        if(std::find(m.begin(),m.end(),4) != m.end() && std::find(m.begin(),m.end(),5) == m.end()) Wdot_y -= J(5,4)*U_Na1;
+        if(std::find(m.begin(),m.end(),11) != m.end() && std::find(m.begin(),m.end(),12) == m.end()) Wdot_y -= J(12,11)*U_Na2;
+        if(std::find(m.begin(),m.end(),12) != m.end() && std::find(m.begin(),m.end(),13) == m.end()) Wdot_y -= J(13,12)*U_Na2;
+        if(std::find(m.begin(),m.end(),0) != m.end() && std::find(m.begin(),m.end(),13) == m.end()) Wdot_y -= J(0,13)*U_Na2;
+        if(std::find(m.begin(),m.end(),5) != m.end() && std::find(m.begin(),m.end(),6) == m.end()) Wdot_y -= J(6,5)*U_K1;
+        if(std::find(m.begin(),m.end(),6) != m.end() && std::find(m.begin(),m.end(),7) == m.end()) Wdot_y -= J(7,6)*U_K1;
+        if(std::find(m.begin(),m.end(),9) != m.end() && std::find(m.begin(),m.end(),10) == m.end()) Wdot_y -= J(10,9)*U_K2;
+        if(std::find(m.begin(),m.end(),10) != m.end() && std::find(m.begin(),m.end(),11) == m.end()) Wdot_y -= J(11,10)*U_K2;
+    }
 
     return Wdot_y;
 }
