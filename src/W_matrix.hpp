@@ -113,19 +113,19 @@ class W_matrix : public Eigen::MatrixXd{
             (*this)(18,10) = ki_bN*c_Na_in; (*this)(18,18) = -ki_dN;
 
             // Additional transition rates to ensure thermodynamic consistency
-            double w01w78=1; double prop_w01_to_w78 = 1;
+            // double w01w78=1; double prop_w01_to_w78 = 1;
 
-            for(int i=0; i<13; i++){
-                w01w78 *= (*this)(i+1,i);
-                if(i!=0 && i!=7){
-                    w01w78 *= 1/(*this)(i,i+1);
-                }
-            }
-            w01w78 *= (*this)(0,13)/(*this)(13,0);
-            w01w78 *= c_ADP*c_P/(c_ATP*K_h)*std::pow(c_Na_out/c_Na_in,3)*std::pow(c_K_in/c_K_out,2)*std::exp(-e*V/(kB*T));
+            // for(int i=0; i<13; i++){
+            //     w01w78 *= (*this)(i+1,i);
+            //     if(i!=0 && i!=7){
+            //         w01w78 *= 1/(*this)(i,i+1);
+            //     }
+            // }
+            // w01w78 *= (*this)(0,13)/(*this)(13,0);
+            // w01w78 *= c_ADP*c_P/(c_ATP*K_h)*std::pow(c_Na_out/c_Na_in,3)*std::pow(c_K_in/c_K_out,2)*std::exp(-e*V/(kB*T));
 
-            (*this)(0,1) = std::sqrt(prop_w01_to_w78*w01w78)*c_ADP_prop; (*this)(1,1) -= std::sqrt(prop_w01_to_w78*w01w78)*c_ADP_prop;
-            (*this)(7,8) = std::sqrt(w01w78/prop_w01_to_w78)*c_P_prop; (*this)(8,8) -= std::sqrt(w01w78/prop_w01_to_w78)*c_P_prop;
+            // (*this)(0,1) = std::sqrt(prop_w01_to_w78*w01w78)*c_ADP_prop; (*this)(1,1) -= std::sqrt(prop_w01_to_w78*w01w78)*c_ADP_prop;
+            // (*this)(7,8) = std::sqrt(w01w78/prop_w01_to_w78)*c_P_prop; (*this)(8,8) -= std::sqrt(w01w78/prop_w01_to_w78)*c_P_prop;
         }
 
         // Delete row and column corresponding to state index and also

@@ -26,16 +26,21 @@ int main(int argc, char **argv){
     Eigen::MatrixXd eigenvectors = solv.get_eigenvectors(W);
     eigenvectors = solv.normalize_columns(eigenvectors);
 
-    // //Scaling according to Clarke et al.
+    //Scaling according to Clarke et al.
     // Eigen::VectorXd P = Clarke_concentrations(W);
     // std::cout << "Clarke normalization: " << P.sum() << std::endl;
     // eigenvectors = eigenvectors*P.sum();
-
 
     std::cout << "\nEigenvalues: \n" << eigenvalues << std::endl;
 
     // Finding the steady state eigenvalue
     int i = solv.steady_state_index(eigenvalues, 1e-11);
+
+    Eigen::VectorXd P_clarke  {{0.00363, 0.00469855, 9.25632e-5, 0.0005, 0.00053404, 4.88017e-5, 0.000493945, \
+        0.00211696, 524.696, 85.8581, 14.3097, 0.596226, 2.23561, 2.09576, 2.22222e-5, \
+        0.00503933, 26.8273, 0.000541375, 26.8306}};
+
+    eigenvectors.col(i) = P_clarke;
 
     // Storing currents for main cycle
     solv.get_main_cycle_currents(W, eigenvectors.col(i));
@@ -71,17 +76,17 @@ int main(int argc, char **argv){
     double J_E2PKNa_in = solv.get_current(W, eigenvectors.col(i), 6,17);
     double J_E1KNa_in = solv.get_current(W, eigenvectors.col(i), 10, 18);
 
-    output_file << "\nCurrent from [E1Na+3] to [E1P(Na+)_3] (main cycle): " << J_E1PNa3_in << std::endl
-                << "Current from [E2PNa+2] to [E2(Na+)_2] (secondary cycle): " << J_E2Na2_in << std::endl
-                << "Current from [E2P] to [E2PK+] (main cycle): " << J_E2PK_in << std::endl
-                << "Current from [E1Na+] to [E1Na+2] (main cycle): " << J_E1Na2_in << std::endl
-                << "Current from [E2PK+2] to [E2(K+)_2] (main cycle): " << J_E2K2_in << std::endl
-                << "Current from [E2(K+)_2] to [E1K+2] (main cycle): " << J_E2K2_out << std::endl;
+    output_file << "\nCurrent from [E1Na+3] to [E1P(Na+)_3] (Total): " << J_E1PNa3_in << std::endl
+                << "Current from [E2PNa+2] to [E2(Na+)_2] (secondary path): " << J_E2Na2_in << std::endl
+                << "Current from [E2P] to [E2PK+] (main path): " << J_E2PK_in << std::endl
+                << "Current from [E1Na+] to [E1Na+2] (main path): " << J_E1Na2_in << std::endl
+                << "Current from [E2PK+2] to [E2(K+)_2] (main path): " << J_E2K2_in << std::endl
+                << "Current from [E2(K+)_2] to [E1K+2] (main path): " << J_E2K2_out << std::endl;
     
-    output_file << "\nCurrent from [E2PNa+] to [E2PNa+K+] (dead-end)" << J_E2PNaK_in << std::endl
-                << "Current from [E1Na+] to [E1Na+K+] (dead-end)" << J_E1NaK_in << std::endl
-                << "Current from [E2PK+] to [E2PK+Na+] (dead-end)" << J_E2PKNa_in << std::endl
-                << "Current from [E1K+] to [E1K+Na+] (dead-end)" << J_E1KNa_in << std::endl;
+    output_file << "\nCurrent from [E2PNa+] to [E2PNa+K+] (dead-end): " << J_E2PNaK_in << std::endl
+                << "Current from [E1Na+] to [E1Na+K+] (dead-end): " << J_E1NaK_in << std::endl
+                << "Current from [E2PK+] to [E2PK+Na+] (dead-end): " << J_E2PKNa_in << std::endl
+                << "Current from [E1K+] to [E1K+Na+] (dead-end): " << J_E1KNa_in << std::endl;
 
     // Work and heat rates in the 3Na-2K path
     double work_3Na_2K = solv.Work_3Na_2K(W, eigenvectors.col(i)) + solv.Energy_3Na_2K(W, eigenvectors.col(i));
