@@ -7,7 +7,8 @@ int main(int argc, char **argv){
     std::ofstream output_file("results/14_states.dat");
     output_file.precision(15);
 
-    // Create transition matrix with coefficients parsed by bin/driver.py
+    // Create transition matrix with coefficients parsed by bin/driver.py.
+    // "J" for Joules or "eV" for electronvolts
     W_matrix W(std::stod(argv[1]),std::stod(argv[2]),std::stod(argv[3]), std::stod(argv[4]), \
                std::stod(argv[5]),std::stod(argv[6]),std::stod(argv[7]), std::stod(argv[8]), \
                std::stod(argv[9]),std::stod(argv[10]),std::stod(argv[11]), std::stod(argv[12]), \
@@ -27,19 +28,19 @@ int main(int argc, char **argv){
     output_file << W << std::endl;
 
     // Initialize solver
-    solver solv(W.cols()); // "J" for Joules or "eV" for electronvolts, size of currents matrix
+    solver solv(W.cols()); // Size of probability currents matrix
     solv.initialize(W);
     Eigen::VectorXd eigenvalues = solv.get_eigenvalues(W);
     Eigen::MatrixXd eigenvectors = solv.get_eigenvectors(W);
     eigenvectors = solv.normalize_columns(eigenvectors);
     std::cout << "\nEigenvalues: \n" << eigenvalues << std::endl;
 
+    // Finding the steady state eigenvalue
     int i = solv.steady_state_index(eigenvalues, 1e-11);
 
     // Storing currents for main cycle
     solv.get_main_cycle_currents(W, eigenvectors.col(i));
 
-    // Finding the steady state eigenvalue
     output_file << "Steady state eigenvalue: " << eigenvalues[i] << std::endl
                 << "Normalized steady state eigenvector: \n" << eigenvectors.col(i) << std::endl;
 
