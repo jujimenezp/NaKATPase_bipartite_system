@@ -55,7 +55,18 @@ int main(int argc, char **argv){
     Y[3] = {11,5};
     Y[4] = {10,6};
     Y[5] = {7,8,9};
+    // X[0] = {9,10,11,12,13,0};
+    // X[1] = {1};
+    // X[2] = {2,3,4,5,6,7};
+    // X[3] = {8};
+    // Y[0] = {0,1,2};
+    // Y[1] = {13,3};
+    // Y[2] = {12,4};
+    // Y[3] = {11,5};
+    // Y[4] = {10,6};
+    // Y[5] = {7,8,9};
     solv.bipartite_subsystems(W, eigenvectors.col(i), X, Y);
+    solv.subsystems_currents(W, eigenvectors.col(i));
 
     // Different currents calculated
     double J_E2K2_in = solv.get_current(W, eigenvectors.col(i), 8, 7);

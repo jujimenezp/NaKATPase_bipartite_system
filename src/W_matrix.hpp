@@ -154,6 +154,8 @@ class solver{
     public:
         // Currents
         Eigen::MatrixXd J;
+        Eigen::MatrixXd J_X;
+        Eigen::MatrixXd J_Y;
 
         //Bipartite Subsystems
         std::unordered_map<int, std::vector<int>> X;
@@ -209,6 +211,8 @@ class solver{
 
         // Eficiency of the transport through the 3Na_2K path
         double Efficiency_3Na_2K(const W_matrix &, const Eigen::VectorXd &) const;
+
+        void subsystems_currents(const W_matrix &, const Eigen::VectorXd &);
 
         // Heat rate in bipartite system according to Ehrich and Sivak (2023)
         double Qdot_X(const W_matrix &, const Eigen::VectorXd &) const;
@@ -408,14 +412,50 @@ double solver::Efficiency_3Na_2K(const W_matrix &W, const Eigen::VectorXd &v) co
 
 }
 
+void solver::subsystems_currents(const W_matrix &W, const Eigen::VectorXd &P){
+
+    for (const auto &[i, m]: X){
+        for (const auto & [j,n]: X){
+            if (i==j) continue;
+            for (const auto & p: m){
+                for (const auto & q:n){
+                    if(W(p,q) == 0 || W(q,p) == 0) continue;
+                    J_X(i,j) += J(p,q);
+                }
+            }
+        }
+    }
+
+    std::cout << "J_X:\n " << J_X << std::endl;
+
+    for (const auto &[i, m]: Y){
+        for (const auto & [j,n]: Y){
+            if (i==j) continue;
+            for (const auto & p: m){
+                for (const auto & q:n){
+                    if(W(p,q) == 0 || W(q,p) == 0) continue;
+                    J_Y(i,j) += J(p,q);
+                }
+            }
+        }
+    }
+    std::cout << "J_Y:\n " << J_Y << std::endl;
+
+    return;
+}
+
 double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Idot_x = 0, P1, P2;
 
     for (const auto & [i,m]: X){
-        P1 = std::reduce(m.begin(),m.end());
+        P1 = 0;
+        for (const auto & p : m) P1 += P(p);
+        //P1 = std::reduce(m.begin(),m.end());
         for (const auto & [j,n]: X){
             if(i<=j) continue;
-            P2 = std::reduce(n.begin(),n.end());
+            P2 = 0;
+            for (const auto & q : n) P2 += P(q);
+            //P2 = std::reduce(n.begin(),n.end());
             for (const auto & p: m){
                 for (const auto & q: n){
                     if(J(p,q)==0) continue;
@@ -432,13 +472,18 @@ double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Idot_y = 0, P1, P2;
 
     for (const auto & [i,m]: Y){
-        P1 = std::reduce(m.begin(),m.end());
+        P1 = 0;
+        for (const auto & p : m) P1 += P(p);
+        //P1 = std::reduce(m.begin(),m.end());
         for (const auto & [j,n]: Y){
             if(i<=j) continue;
-            P2 = std::reduce(n.begin(),n.end());
+            P2 = 0;
+            for (const auto & q : n) P2 += P(q);
+            //P2 = std::reduce(n.begin(),n.end());
             for (const auto & p: m){
                 for (const auto & q: n){
                     if(J(p,q)==0) continue;
+                    std::cout << i  << "\t" << j << "\t" << P(p) << "\t" << P(q)  << "\t" << P1  << "\t" << P2 << std::endl;
                     Idot_y -= J(p,q)*std::log2((P(p)/P1)*(P2/P(q)));
                 }
             }
@@ -460,6 +505,7 @@ double solver::Qdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
                     Qdot_x += J(q,p)*std::log(W(q,p)/W(p,q));
                 }
             }
+            //Qdot_x += J_X(j,i)*std::log(num/den);
         }
     }
     Qdot_x *= -W.kB*W.T;
@@ -470,17 +516,17 @@ double solver::Qdot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
     double Qdot_y=0;
 
     for (const auto &[i, m]: Y){
-        for (const auto &[j,n]: Y){
+        for (const auto & [j,n]: Y){
             if (i<=j) continue;
             for (const auto & p: m){
-                for (const auto & q: n){
+                for (const auto & q:n){
                     if(W(p,q) == 0 || W(q,p) == 0) continue;
                     Qdot_y += J(q,p)*std::log(W(q,p)/W(p,q));
                 }
             }
+            // Qdot_y += J_Y(j,i)*std::log(num/den);
         }
     }
-
     Qdot_y *= -W.kB*W.T;
     return Qdot_y;
 }
@@ -553,6 +599,9 @@ double solver::Sdot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
 void solver::bipartite_subsystems(const W_matrix &W, const Eigen::VectorXd &P, const std::unordered_map<int ,std::vector<int>> Xi, const std::unordered_map<int ,std::vector<int>> Yi){
     X=Xi;
     Y=Yi;
+    J_X = Eigen::MatrixXd::Zero(X.size(), X.size());
+    J_Y = Eigen::MatrixXd::Zero(Y.size(), Y.size());
+    return;
 }
 
 
