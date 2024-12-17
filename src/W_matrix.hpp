@@ -426,7 +426,6 @@ void solver::subsystems_currents(const W_matrix &W, const Eigen::VectorXd &P){
         }
     }
 
-    std::cout << "J_X:\n " << J_X << std::endl;
 
     for (const auto &[i, m]: Y){
         for (const auto & [j,n]: Y){
@@ -439,7 +438,6 @@ void solver::subsystems_currents(const W_matrix &W, const Eigen::VectorXd &P){
             }
         }
     }
-    std::cout << "J_Y:\n " << J_Y << std::endl;
 
     return;
 }
@@ -459,7 +457,7 @@ double solver::Idot_X(const W_matrix &W, const Eigen::VectorXd &P) const{
             for (const auto & p: m){
                 for (const auto & q: n){
                     if(J(p,q)==0) continue;
-                    Idot_x -= J(p,q)*std::log2((P(p)/P1)*(P2/P(q)));
+                    Idot_x += J(p,q)*std::log2((P(p)/P1)*(P2/P(q)));
                 }
             }
         }
@@ -483,8 +481,7 @@ double solver::Idot_Y(const W_matrix &W, const Eigen::VectorXd &P) const{
             for (const auto & p: m){
                 for (const auto & q: n){
                     if(J(p,q)==0) continue;
-                    std::cout << i  << "\t" << j << "\t" << P(p) << "\t" << P(q)  << "\t" << P1  << "\t" << P2 << std::endl;
-                    Idot_y -= J(p,q)*std::log2((P(p)/P1)*(P2/P(q)));
+                    Idot_y += J(p,q)*std::log2((P(p)/P1)*(P2/P(q)));
                 }
             }
         }
