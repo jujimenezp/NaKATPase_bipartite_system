@@ -3,6 +3,7 @@
 # Script to read transition rates and pass them to main program
 from pandas import read_csv
 from numpy import linspace
+from numpy import logspace
 import subprocess
 import sys
 
@@ -15,7 +16,7 @@ transition_rates = read_csv("data/transition_rates.csv", skiprows=0, sep=',')
 parameters = read_csv("data/parameters.csv", skiprows=0, sep=',')
 params=[str(i) for i in transition_rates.iloc[:,1]]+[str(i) for i in parameters.iloc[:,1]]
 
-def regular_exe():
+def basic_exe():
     print('Deleting '+main_exe)
     subprocess.run(['rm',main_exe],stderr=subprocess.DEVNULL)
 
@@ -52,6 +53,31 @@ def neuron_voltage_range():
         except Exception as e:
             print(e)
             print('Could not run '+main_exe+'. Check runtime errors.')
+
+def prop_range():
+    prop_range = logspace(-9,9,300)
+    with open('results/proportion_range_Ki_less.dat', 'w') as f:
+        print("prop_w01_to_w78\tturnover(1/s)\tWork(kBT/cycle)\tHeat(kBT/cycle)\tQdot_x\tQdot_y\tWdot_x\tWdot_y\tIdot_x\tIdot_y\tEfficiency", file=f)
+
+    print('Deleting '+main_exe)
+    subprocess.run(['rm',main_exe],stderr=subprocess.DEVNULL)
+
+    print('Compiling '+main_cpp+'...')
+    subprocess.run(['g++',*flags_cpp,main_cpp,'-o',main_exe])
+
+    print('params(31): ',params[31])
+    for prop in prop_range:
+        params[31] = str(prop)
+        print(prop)
+        print('Running '+main_exe+'...')
+        try:
+            subprocess.run([main_exe,*params])
+            print('Results saved in results directory.')
+        except Exception as e:
+            print(e)
+            print('Could not run '+main_exe+'. Check runtime errors.')
+
+    print(prop_range)
 
 if __name__=='__main__':
     neuron_voltage_range()

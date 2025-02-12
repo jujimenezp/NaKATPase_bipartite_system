@@ -1,6 +1,6 @@
 Parameters,
 T(K),    297.15
-V(V),    40e-3
+V(V),    -79e-3
 F(C/Mol),    9.648533212e4
 R(JK^-1Mol^-1),    8.314462618
 c_Na_out(Mol),    0.145
@@ -11,3 +11,4 @@ c_ATP(Mol),    0.005
 c_ADP(Mol),    0.0001
 c_P(Mol),     0.005
 K_h(Mol),     400000
+prop_w01_to_w78,    1

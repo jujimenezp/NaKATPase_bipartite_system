@@ -16,7 +16,7 @@ int main(int argc, char **argv){
                std::stod(argv[21]),std::stod(argv[22]),std::stod(argv[23]), std::stod(argv[24]), \
                std::stod(argv[25]),std::stod(argv[26]),std::stod(argv[27]), std::stod(argv[28]), \
                std::stod(argv[29]),std::stod(argv[30]),std::stod(argv[31]), "eV", 1, 1, 1, 1, \
-               1, 1, 1);
+               1, 1, 1, std::stod(argv[32]));
 
     // Dead-end states and secondary path states deleted
     W.delete_state(18);
@@ -34,7 +34,7 @@ int main(int argc, char **argv){
     eigenvectors = solv.normalize_columns(eigenvectors);
     std::cout << "\nEigenvalues: \n" << eigenvalues << std::endl;
 
-    int i = solv.steady_state_index(eigenvalues, 1e-11);
+    int i = solv.steady_state_index(eigenvalues, 2e-11);
 
     // Storing currents for main cycle
     solv.get_main_cycle_currents(W, eigenvectors.col(i));
@@ -119,10 +119,10 @@ int main(int argc, char **argv){
     output_file.close();
     std::cout << "Current: " << J_E1PNa3_in << std::endl;
 
-    std::ofstream voltage_file("results/voltage_range.dat", std::ofstream::app);
-    voltage_file << W.V <<"\t"<< J_E1PNa3_in <<"\t"<< work_3Na_2K <<"\t"<< Qdot <<"\t"<< Qdot_x <<"\t"<< Qdot_y \
+    std::ofstream results_file("results/voltage_range.dat", std::ofstream::app);
+    results_file << W.V <<"\t"<< J_E1PNa3_in <<"\t"<< work_3Na_2K <<"\t"<< Qdot <<"\t"<< Qdot_x <<"\t"<< Qdot_y \
                  << "\t" << Wdot_x <<"\t"<< Wdot_y <<"\t"<< I_dot_X <<"\t"<< I_dot_Y <<"\t" << eff << std::endl;
-    voltage_file.close();
+    results_file.close();
 
     return 0;
 }

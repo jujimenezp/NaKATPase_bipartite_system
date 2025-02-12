@@ -18,9 +18,10 @@ class W_matrix : public Eigen::MatrixXd{
     private:
     public:
         //Parameters
-        double T,V,F,R;
+        double T,V,F,R; // Temperaure, voltage, faraday constant, and ideal gas constant
         double FVoRT;
         double kB, e; // Boltzmann constant and electron charge
+        double prop_w01_to_w78; // W_01 / W_78
         std::string E_rate_units;
 
         // Initial transition rates
@@ -44,7 +45,7 @@ class W_matrix : public Eigen::MatrixXd{
                  double c_Na_outi, double c_Na_ini, double c_K_outi, double c_K_ini, \
                  double c_ATPi, double c_ADPi, double c_Pi, double K_hi, std::string J_or_eV, \
                  double c_Na_out_prop, double c_Na_in_prop, double c_K_out_prop, double c_K_in_prop, \
-                 double c_ATP_prop, double c_ADP_prop, double c_P_prop) : Eigen::MatrixXd(19,19)
+                 double c_ATP_prop, double c_ADP_prop, double c_P_prop, double prop_w01_to_w78i) : Eigen::MatrixXd(19,19)
         {
             T=Ti; V=Vi; F=Fi; R=Ri;
             k_1=k_1i; k_2fv0=k_2fv0i; k_2rv0=k_2rv0i; ko_dN1v0=ko_dN1v0i; ko_bN1v0=ko_bN1v0i;
@@ -113,7 +114,7 @@ class W_matrix : public Eigen::MatrixXd{
             (*this)(18,10) = ki_bN*c_Na_in; (*this)(18,18) = -ki_dN;
 
             // Additional transition rates to ensure thermodynamic consistency
-            double w01w78=1; double prop_w01_to_w78 = 1;
+            double w01w78=1;  prop_w01_to_w78=prop_w01_to_w78i;
 
             for(int i=0; i<13; i++){
                 w01w78 *= (*this)(i+1,i);
