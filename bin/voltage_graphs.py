@@ -2,6 +2,9 @@
 
 from pandas import read_csv
 from matplotlib import pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['mathtext.fontset'] = 'stix'
+mpl.rcParams['font.family'] = 'STIXGeneral'
 
 data = read_csv("results/voltage_range.dat", sep="\t")
 
@@ -75,3 +78,23 @@ ax.plot(voltage,Work, color='red', marker='.', linewidth=1, markersize=3, label=
 ax.legend(loc='upper left')
 plt.savefig('results/voltage_global.png', format='png', bbox_inches='tight', dpi=300)
 #plt.show()
+
+
+fig, (ax1, ax2) = plt.subplots(2,1, sharex=True)
+ax1.set_xlim(-0.087,0.06)
+ax1.set_box_aspect(0.6)
+ax1.set_ylabel('Probability current (1/s)')
+ax1.plot(voltage,turnover, color='black', linewidth=2)
+
+ax2.set_box_aspect(0.6)
+ax2.set_xlabel('Voltage (V)')
+ax2.set_ylabel('Heat and information rates')
+ax2.axhline(0, color='black', linestyle='dashed', linewidth=0.7)
+ax2.plot(voltage,Qdot_x, color='red', linewidth=2, label=r'$\Delta Q_X$  ($\frac{k_B T}{\text{cycle}}$)')
+ax2.plot(voltage,Qdot_y, color='blue', linewidth=2, label=r'$\Delta Q_Y$  ($\frac{k_B T}{\text{cycle}}$)')
+ax2.plot(voltage,Idot_x, color='orange', linewidth=2, label=r'$\Delta I_X$ (nats/cycle)')
+ax2.legend(loc='upper right', fontsize=8, framealpha=1)
+fig.subplots_adjust(hspace=.0)
+plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
+
+plt.savefig('results/voltage_turnover_sub_heat_info.png', format='png', bbox_inches='tight', dpi=300)

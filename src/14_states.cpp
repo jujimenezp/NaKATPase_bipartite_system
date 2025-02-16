@@ -119,8 +119,8 @@ int main(int argc, char **argv){
     output_file.close();
     std::cout << "Current: " << J_E1PNa3_in << std::endl;
 
-    std::ofstream results_file("results/concentration_range_KIn.dat", std::ofstream::app);
-    results_file << W.c_K_in <<"\t"<< J_E1PNa3_in <<"\t"<< work_3Na_2K <<"\t"<< Qdot <<"\t"<< Qdot_x <<"\t"<< Qdot_y \
+    std::ofstream results_file("results/voltage_range.dat", std::ofstream::app);
+    results_file << W.V <<"\t"<< J_E1PNa3_in <<"\t"<< work_3Na_2K <<"\t"<< Qdot <<"\t"<< Qdot_x <<"\t"<< Qdot_y \
                  << "\t" << Wdot_x <<"\t"<< Wdot_y <<"\t"<< I_dot_X <<"\t"<< I_dot_Y <<"\t" << eff << std::endl;
     results_file.close();
 

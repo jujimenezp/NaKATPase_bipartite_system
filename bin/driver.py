@@ -34,7 +34,7 @@ def basic_exe():
 
 # Many runs of the program changing transmembrane voltage
 def neuron_voltage_range():
-    voltage_range = linspace(-87e-3,60e-3,100)
+    voltage_range = linspace(-87e-3,60e-3,1000)
     print(voltage_range)
     with open('results/voltage_range.dat', 'w') as f:
         print("voltage(V)\tturnover(1/s)\tWork(kBT/cycle)\tHeat(kBT/cycle)\tQdot_x\tQdot_y\tWdot_x\tWdot_y\tIdot_x\tIdot_y\tEfficiency", file=f)
@@ -110,4 +110,4 @@ def concentrations_range():
                 print('Could not run '+main_exe+'. Check runtime errors.')
 
 if __name__=='__main__':
-    concentrations_range()
+    neuron_voltage_range()
