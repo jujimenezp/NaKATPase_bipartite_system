@@ -34,4 +34,5 @@ ax.fill_between(prop,turnover_Nao_less,turnover_Nao, color='orange', alpha=0.5, 
 ax.fill_between(prop,turnover_Ko_less,turnover_Ko, color='green', alpha=0.5, label=r"(K$^+$)$_{out}$")
 ax.fill_between(prop,turnover_Ki_less,turnover_Ki, color='blue', alpha=0.5, label=r'(K$^+$)$_{in}$')
 ax.legend(loc='upper right')
-plt.savefig('results/concentrations_variation.png', format='png', bbox_inches='tight', dpi=300)
+#plt.savefig('results/concentrations_variation.png', format='png', bbox_inches='tight', dpi=300)
+plt.show()
