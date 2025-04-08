@@ -3,10 +3,10 @@ T(K),    297.15
 V(V),    -79e-3
 F(C/Mol),    9.648533212e4
 R(JK^-1Mol^-1),    8.314462618
-c_Na_out(Mol),    0.145
-c_Na_in(Mol),    0.012
-c_K_out(Mol),    0.005
-c_K_in(Mol),    0.140
+c_Na_out(Mol),    0.140
+c_Na_in(Mol),    0.015
+c_K_out(Mol),    0.004
+c_K_in(Mol),    0.120
 c_ATP(Mol),    0.005
 c_ADP(Mol),    0.0001
 c_P(Mol),     0.005
