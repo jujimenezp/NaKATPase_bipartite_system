@@ -26,17 +26,17 @@ fig, (ax2, ax3) = plt.subplots(2,1,  sharex=True)
 #ax.set_title(r"Proportion v. Information Flow")
 
 # #fig, ax = plt.subplots(1,1, layout='tight')
-# ax1.ticklabel_format(axis='y', style='scientific', scilimits=(-4,-4), useMathText=True)
-# ax1.yaxis.set_major_locator(plt.MultipleLocator(2e-4))
+# #ax1.ticklabel_format(axis='y', style='scientific', scilimits=(-1,-1), useMathText=True)
+# #ax1.yaxis.set_major_locator(plt.MultipleLocator(2e-1))
+# ax1.set_yticks([0, 0.2, 0.4, 0.6, 0.8], ['0', '0.2', '0.4', '0.6', '0.8'])
 # ax1.set_xlim(1e-9,1e+9)
-# ax1.set_ylim(0,12e-4)
+# ax1.set_ylim(0,0.8)
 # ax1.set_box_aspect(0.6)
 # ax1.set_xscale('log')
 # #ax1.set_xlabel(r"$\frac{W_{0,1}}{W_{7,8}}$")
 # ax1.set_ylabel('Probability current (1/s)', fontsize=11)
 # ax1.plot(prop, turnover, color='black', linewidth=2)
 # ax1.text(0.05,0.95, 'a.', transform=ax1.transAxes, fontsize=13, verticalalignment='top', backgroundcolor='None')
-
 
 ax2.set_box_aspect(0.6)
 ax2.set_xlim(1e-9,1e+9)
@@ -48,9 +48,9 @@ ax2.plot(prop, Efficiency, color='purple', linewidth=2)
 ax2.plot(prop, eff_x, color='red', linewidth=2)
 ax2.plot(prop, eff_y, color='blue', linewidth=2)
 ax2.text(0.05,0.95, 'b.', transform=ax2.transAxes, fontsize=13, verticalalignment='top', backgroundcolor='None')
-ax2.text(0.4,0.99, r'$\eta_Y$', transform=ax2.transAxes, fontsize=11, verticalalignment='top', backgroundcolor='None', color='blue')
-ax2.text(0.4,0.75, r'$\eta_X$', transform=ax2.transAxes, fontsize=11, verticalalignment='top', backgroundcolor='None', color='red')
-ax2.text(0.8,0.75, r'$\eta$', transform=ax2.transAxes, fontsize=11, verticalalignment='top', backgroundcolor='None', color='purple')
+ax2.text(0.8,0.99, r'$\eta_Y$', transform=ax2.transAxes, fontsize=11, verticalalignment='top', backgroundcolor='None', color='blue')
+ax2.text(0.8,0.85, r'$\eta_X$', transform=ax2.transAxes, fontsize=11, verticalalignment='top', backgroundcolor='None', color='red')
+ax2.text(0.45,0.75, r'$\eta$', transform=ax2.transAxes, fontsize=11, verticalalignment='top', backgroundcolor='None', color='purple')
 
 ax3.set_box_aspect(0.6)
 ax3.set_xlim(1e-9,1e+9)
@@ -63,14 +63,13 @@ ax3.plot(prop,Idot_x, color='red', linewidth=2)
 ax3.text(0.05,0.95, 'c.', transform=ax3.transAxes, fontsize=14, verticalalignment='top', backgroundcolor='None')
 E_label = r'Energy flow ($k_\text{B}T$/cycle)'
 I_label = r'Information flow (nats/cycle)'
-ax3.text(0.09,0.78, E_label, transform=ax3.transAxes, fontsize=8, verticalalignment='top', backgroundcolor='None', color='green')
-ax3.text(0.09,0.25, I_label, transform=ax3.transAxes, fontsize=8, verticalalignment='top', backgroundcolor='None', color='red')
+ax3.text(0.5,0.76, E_label, transform=ax3.transAxes, fontsize=8, verticalalignment='top', backgroundcolor='None', color='green')
+ax3.text(0.5,0.38, I_label, transform=ax3.transAxes, fontsize=8, verticalalignment='top', backgroundcolor='None', color='red')
 
 
 plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
-extent = mpl.transforms.Bbox([[0.2,0.02],[0.8,0.472]]).transformed(fig.transFigure - fig.dpi_scale_trans)
-plt.savefig('results/prop_energy_info.png', format='png', bbox_inches=extent, dpi=300)
-#plt.show()
+extent = mpl.transforms.Bbox([[0.2,0.5],[0.8,0.9]]).transformed(fig.transFigure - fig.dpi_scale_trans)
+plt.savefig('results/prop_efficiencies2.png', format='png', bbox_inches=extent, dpi=300)
 
 
 

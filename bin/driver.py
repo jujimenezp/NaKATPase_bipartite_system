@@ -59,7 +59,7 @@ def neuron_voltage_range():
 #Many runs of the program changing proportion of W_01 to W_78
 def prop_range():
     prop_range = logspace(-9,9,300)
-    with open('results/proportion_range_Ki_less.dat', 'w') as f:
+    with open('results/proportion_range.dat', 'w') as f:
         print("prop_w01_to_w78\tturnover(1/s)\tWork(kBT/cycle)\tHeat(kBT/cycle)\tQdot_x\tQdot_y\tWdot_x\tWdot_y\tIdot_x\tIdot_y\tEfficiency", file=f)
 
     print('Deleting '+main_exe)
@@ -80,7 +80,6 @@ def prop_range():
             print(e)
             print('Could not run '+main_exe+'. Check runtime errors.')
 
-    print(prop_range)
 
 # Many runs of the program changing the concentration of ions
 def concentrations_range():
@@ -110,4 +109,4 @@ def concentrations_range():
                 print('Could not run '+main_exe+'. Check runtime errors.')
 
 if __name__=='__main__':
-    neuron_voltage_range()
+    concentrations_range()

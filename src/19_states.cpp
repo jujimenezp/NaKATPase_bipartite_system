@@ -14,7 +14,7 @@ int main(int argc, char **argv){
                std::stod(argv[21]),std::stod(argv[22]),std::stod(argv[23]), std::stod(argv[24]), \
                std::stod(argv[25]),std::stod(argv[26]),std::stod(argv[27]), std::stod(argv[28]), \
                std::stod(argv[29]),std::stod(argv[30]),std::stod(argv[31]), "eV", 1, 1, 1, 1, \
-               1, 1, 1);
+               1, 1, 1, std::stod(argv[32]));
     output_file << W << std::endl;
 
     //Initiailze solver
@@ -31,7 +31,7 @@ int main(int argc, char **argv){
     // std::cout << "\nEigenvalues: \n" << eigenvalues << std::endl;
 
     // Finding the steady state eigenvalue
-    int i = solv.steady_state_index(eigenvalues, 1e-11);
+    int i = solv.steady_state_index(eigenvalues, 2e-11);
 
     // Storing currents for main cycle
     solv.get_main_cycle_currents(W, eigenvectors.col(i));
@@ -68,10 +68,10 @@ int main(int argc, char **argv){
                 << "Current from [E1K+] to [E1K+Na+] (dead-end)" << J_E1KNa_in << std::endl;
 
     // Work and heat rates in the 3Na-2K path
-    double work_3Na_2K = solv.Work_3Na_2K(W, eigenvectors.col(i)) + solv.Energy_3Na_2K(W, eigenvectors.col(i));
-    output_file << "\nWork rate through the 3Na_2K path: " << work_3Na_2K/(W.T*W.kB*J_E1PNa3_in) << " kBT/cycle" << std::endl;
-    double Qdot = solv.Qdot(W, eigenvectors.col(i));
-    output_file << "Heat rate through the 3Na_2K path: " << Qdot/(W.T*W.kB*J_E1PNa3_in) << " kBT/cycle" << std::endl;
+    double work_3Na_2K = -(solv.Work_3Na_2K(W, eigenvectors.col(i)) + solv.Energy_3Na_2K(W, eigenvectors.col(i)))/(W.T*W.kB*J_E1PNa3_in);
+    output_file << "\nWork rate through the 3Na_2K path: " << work_3Na_2K << " kBT/cycle" << std::endl;
+    double Qdot = solv.Qdot(W, eigenvectors.col(i))/(W.T*W.kB*J_E1PNa3_in);
+    output_file << "Heat rate through the 3Na_2K path: " << Qdot << " kBT/cycle" << std::endl;
 
     // Entropy production
     double entropy_sys_3Na_2K = solv.System_entropy(W, eigenvectors.col(i));

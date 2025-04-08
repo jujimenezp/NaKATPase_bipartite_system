@@ -127,6 +127,8 @@ class W_matrix : public Eigen::MatrixXd{
 
             (*this)(0,1) = std::sqrt(prop_w01_to_w78*w01w78)*c_ADP_prop; (*this)(1,1) -= std::sqrt(prop_w01_to_w78*w01w78)*c_ADP_prop;
             (*this)(7,8) = std::sqrt(w01w78/prop_w01_to_w78)*c_P_prop; (*this)(8,8) -= std::sqrt(w01w78/prop_w01_to_w78)*c_P_prop;
+            // (*this)(0,1) = 0; (*this)(1,1) -= 0;
+            // (*this)(7,8) = 0; (*this)(8,8) -= 0;
         }
 
         // Delete row and column corresponding to state index and also
