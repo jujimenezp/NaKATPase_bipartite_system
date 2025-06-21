@@ -82,7 +82,7 @@ def prop_range():
 
 
 # Many runs of the program changing the concentration of ions
-def concentrations_range():
+def concentration_range():
     base_concentration = float(params[26])
     percentage_change = linspace(-0.2,0.2,101)
     with open('results/concentration_range_KIn.dat', 'w') as f:
@@ -109,4 +109,4 @@ def concentrations_range():
                 print('Could not run '+main_exe+'. Check runtime errors.')
 
 if __name__=='__main__':
-    concentrations_range()
+    concentration_range()
